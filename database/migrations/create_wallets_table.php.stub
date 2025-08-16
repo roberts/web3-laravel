@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('wallets', function (Blueprint $table) {
+            $table->id();
+            $table->string('address')->unique();
+            $table->text('key')->nullable(); // encrypted private key (Crypt)
+            $table->nullableMorphs('owner'); // owner_type + owner_id polymorphic
+            $table->foreignId('blockchain_id')->nullable()->constrained('blockchains');
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('last_used_at')->nullable();
+            $table->json('meta')->nullable();
+            $table->timestamps();
+
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('wallets');
+    }
+};

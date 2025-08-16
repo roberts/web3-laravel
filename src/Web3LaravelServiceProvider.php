@@ -22,8 +22,13 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             ->hasMigrations([
                 'create_web3_laravel_table',
                 'create_blockchains_table',
+                'create_wallets_table',
             ])
-            ->hasCommand(Web3LaravelCommand::class);
+            ->hasCommands([
+                Web3LaravelCommand::class,
+                \Roberts\Web3Laravel\Commands\WalletCreateCommand::class,
+                \Roberts\Web3Laravel\Commands\WalletListCommand::class,
+            ]);
     }
 
     public function registeringPackage(): void

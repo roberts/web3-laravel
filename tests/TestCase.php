@@ -15,6 +15,10 @@ class TestCase extends Orchestra
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Roberts\\Web3Laravel\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
+
+    // Load and run package migrations for tests
+    $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+    $this->artisan('migrate', ['--database' => 'testing'])->run();
     }
 
     protected function getPackageProviders($app)
@@ -28,10 +32,16 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        /*
-         foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/database/migrations') as $migration) {
-            (include $migration->getRealPath())->up();
-         }
-         */
+        // Use sqlite in-memory for tests
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
+
+    // Encryption key for Crypt
+    $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+
+        // No need to run migrator here; done in setUp
     }
 }
