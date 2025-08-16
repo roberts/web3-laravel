@@ -35,6 +35,25 @@ class Web3Laravel
     }
 
     /**
+     * Get a Web3 client using a WebSocket provider when available.
+     */
+    public function web3Ws(?int $chainId = null, ?string $ws = null): Web3
+    {
+        $wsUrl = $ws ?: $this->resolveWsUrl($chainId);
+        $timeout = (int) ($this->config['request_timeout'] ?? 10);
+        if (!$wsUrl) {
+            // Fallback to HTTP if WS not configured
+            return $this->web3($chainId, null);
+        }
+        // Create WS provider if available, else fallback to HTTP
+        if (class_exists('Web3\\Providers\\WebSocketProvider')) {
+            $providerClass = 'Web3\\Providers\\WebSocketProvider';
+            return new Web3(new $providerClass($wsUrl, $timeout));
+        }
+        return $this->web3($chainId, null);
+    }
+
+    /**
      * Resolve an RPC URL for a chain id or the default chain.
      */
     public function resolveRpcUrl(?int $chainId = null): string
@@ -80,5 +99,36 @@ class Web3Laravel
         }
 
         return $defaultRpc;
+    }
+
+    /**
+     * Resolve a WS URL via config mapping or naive conversion from HTTP.
+     */
+    public function resolveWsUrl(?int $chainId = null): ?string
+    {
+        $wsNetworks = (array) ($this->config['ws_networks'] ?? []);
+        $defaultWs = $this->config['default_ws'] ?? null;
+        $useDb = (bool) ($this->config['use_database'] ?? false);
+
+        if ($chainId !== null) {
+            if (isset($wsNetworks[$chainId]) && is_string($wsNetworks[$chainId])) {
+                return $wsNetworks[$chainId];
+            }
+        }
+
+        if (is_string($defaultWs) && $defaultWs !== '') {
+            return $defaultWs;
+        }
+
+        // Attempt to convert HTTP RPC to WS
+        $http = $this->resolveRpcUrl($chainId);
+        if (str_starts_with($http, 'http://')) {
+            return 'ws://'.substr($http, 7);
+        }
+        if (str_starts_with($http, 'https://')) {
+            return 'wss://'.substr($http, 8);
+        }
+
+        return null;
     }
 }

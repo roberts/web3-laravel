@@ -14,6 +14,41 @@ class TransactionService
         protected Web3Laravel $web3
     ) {}
 
+    /** Estimate gas for a transaction using the wallet's network. */
+    public function estimateGas(Wallet $from, array $tx, string $blockTag = 'latest'): string
+    {
+        $client = $from->web3();
+        $eth = $client->eth;
+        $payload = array_merge(['from' => strtolower($from->address)], $tx);
+        return (string) $this->ethCall($eth, 'estimateGas', [$payload, $blockTag]);
+    }
+
+    /** Suggest EIP-1559 fee parameters (maxPriorityFeePerGas, maxFeePerGas) as hex strings. */
+    public function suggestFees(Wallet $from): array
+    {
+        $eth = $from->web3()->eth;
+        // priority fee
+        try {
+            $priority = $this->ethCall($eth, 'maxPriorityFeePerGas');
+        } catch (\Throwable) {
+            $priority = Web3Utils::toHex(1_000_000_000, true); // 1 gwei fallback
+        }
+        if (!is_string($priority)) {
+            $priority = Web3Utils::toHex($priority, true);
+        }
+        // use gasPrice as a simple maxFee fallback
+        try {
+            $gp = $this->ethCall($eth, 'gasPrice');
+        } catch (\Throwable) {
+            $gp = $priority;
+        }
+        if (!is_string($gp)) {
+            $gp = Web3Utils::toHex($gp, true);
+        }
+
+        return ['priority' => $priority, 'max' => $gp];
+    }
+
     /**
      * Build, sign (legacy or EIP-155), and send a raw transaction.
      * Minimal support: legacy gasPrice or EIP-155 (pre-1559) style. 1559 fields can be passed but not signed here yet.
@@ -31,21 +66,39 @@ class TransactionService
         // Fetch missing fields
         $nonce = $tx['nonce'] ?? $this->ethCall($eth, 'getTransactionCount', [strtolower($from->address), 'pending']);
         $gasPrice = $tx['gasPrice'] ?? $this->ethCall($eth, 'gasPrice');
-        $gasLimit = $tx['gas'] ?? 21000;
+        // If no gas provided, estimate from node using provided fields
+        $gasLimit = $tx['gas'] ?? $tx['gasLimit'] ?? null;
         $to = $tx['to'] ?? null;
         $value = $tx['value'] ?? 0;
         $data = $tx['data'] ?? '0x';
         $chainId = $tx['chainId'] ?? ($from->blockchain->chain_id ?? config('web3-laravel.default_chain_id'));
 
+        if ($gasLimit === null) {
+            $est = $this->ethCall($eth, 'estimateGas', [[
+                'from' => strtolower($from->address),
+                'to' => $to,
+                'value' => $value,
+                'data' => $data,
+            ], 'latest']);
+            // Add a small safety margin (12%) to reduce underestimation failures
+            // Convert possible hex result to int if needed
+            if (is_string($est) && str_starts_with($est, '0x')) {
+                $gasInt = hexdec(substr($est, 2));
+            } else {
+                $gasInt = (int) $est;
+            }
+            $gasLimit = (int) ceil($gasInt * 1.12);
+        }
+
         // Switch to EIP-1559 if fields present
-        $is1559 = isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) || (($tx['type'] ?? null) === 2);
+    $is1559 = isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) || (($tx['type'] ?? null) === 2);
         if ($is1559) {
             return $this->sendEip1559($from, [
                 'nonce' => $nonce,
                 'to' => $to,
                 'value' => $value,
                 'data' => $data,
-                'gas' => $tx['gas'] ?? $tx['gasLimit'] ?? $gasLimit,
+        'gas' => $tx['gas'] ?? $tx['gasLimit'] ?? $gasLimit,
                 'chainId' => $chainId,
                 'maxFeePerGas' => $tx['maxFeePerGas'] ?? null,
                 'maxPriorityFeePerGas' => $tx['maxPriorityFeePerGas'] ?? null,
@@ -62,7 +115,7 @@ class TransactionService
             throw new \RuntimeException('Signing not available. Please require web3p/ethereum-tx.');
         }
 
-        $txData = [
+    $txData = [
             'nonce' => Web3Utils::toHex($nonce, true),
             'gasPrice' => Web3Utils::toHex($gasPrice, true),
             'gas' => Web3Utils::toHex($gasLimit, true),

@@ -103,6 +103,27 @@ trait InteractsWithWeb3
         return $this->getGasPrice();
     }
 
+    /**
+     * Estimate gas for a transaction from this address.
+     *
+     * @param array $tx Example: ['to' => '0x..', 'value' => '0x..', 'data' => '0x..']
+     * @param string $blockTag
+     * @return string Hex quantity (0x...)
+     */
+    public function estimateGas(array $tx, string $blockTag = 'latest'): string
+    {
+        $params = array_merge([
+            'from' => strtolower($this->address),
+        ], $tx);
+
+        $gas = $this->ethCall('estimateGas', [$params, $blockTag]);
+        if (is_object($gas) && method_exists($gas, 'toString')) {
+            return (string) $gas->toString();
+        }
+
+        return (string) $gas;
+    }
+
     // Eloquent-style send using TransactionService
     public function send(array $tx): string
     {

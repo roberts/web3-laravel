@@ -86,6 +86,13 @@ $balance = $wallet->balance(); // getBalance()
 $nonce = $wallet->nonce();     // getTransactionCount()
 $gas = $wallet->gasPrice();    // getGasPrice()
 
+// Estimate gas for a potential transaction from this wallet
+$estimatedGasHex = $wallet->estimateGas([
+	'to' => '0x0000000000000000000000000000000000000000',
+	'value' => 1000,
+	// 'data' => '0x...', // optional
+]);
+
 // Send a transaction (legacy fields; signing library required)
 $txHash = $wallet->send([
 	'to' => '0x0000000000000000000000000000000000000000',
@@ -101,6 +108,96 @@ You can also use the built-in ping command to verify connectivity:
 
 ```bash
 php artisan web3:ping --chainId=8453
+```
+
+## Transactions: Eloquent model & async pipeline
+
+This package provides a `Transaction` Eloquent model and a fully asynchronous submission flow so your app doesn’t block while sending transactions.
+
+- Create a transaction record; it auto-estimates gas and suggests EIP-1559 fees if you don’t provide them.
+- On `created`, an event fires and a queued job handles signing and broadcasting.
+- The model is updated with the resulting `tx_hash` and `status`.
+
+Example: create and queue a transaction
+
+```php
+use Roberts\Web3Laravel\Models\Transaction;
+use Roberts\Web3Laravel\Models\Wallet;
+
+$wallet = Wallet::first();
+
+$tx = Transaction::create([
+	'wallet_id' => $wallet->id,
+	'to' => '0x0000000000000000000000000000000000000000',
+	'value' => '0x3e8', // 1000 wei (supports hex or decimal string)
+	// Omit gas_limit/fees to let the package estimate & suggest 1559 fees automatically
+	// 'data' => '0x...', // for contract method calls
+]);
+
+// Shortly after, the queued job will set:
+// $tx->status  => 'submitted' (or 'failed')
+// $tx->tx_hash => '0x...'
+```
+
+What gets filled automatically when omitted:
+
+- gas_limit: estimated via `eth_estimateGas` with a small 12% safety buffer.
+- is_1559: defaults to true.
+- priority_max: suggested from `eth_maxPriorityFeePerGas` (fallback 1 gwei).
+- fee_max: suggested from `eth_gasPrice` when needed.
+
+Immediate send vs tracked send:
+
+- If you want a quick fire-and-forget send, call `$wallet->send([...])` to sign and broadcast immediately (no DB record).
+- If you need tracking, create a `Transaction` model as shown above; the package handles queuing and status updates for you.
+
+Statuses and fields:
+
+- `status`: `pending` on create, `submitted` after broadcast, `confirmed` when enough confirmations are observed, `failed` on error (with `error` message).
+- `tx_hash`: set on success.
+- Other fields include `nonce`, `chain_id`, `data`, `access_list`, and optional contract function metadata if you store it.
+
+Confirmations tracking
+
+- After a transaction is submitted, the package dispatches a confirmation polling job that:
+	- fetches the transaction receipt periodically,
+	- compares the current block to the receipt’s blockNumber,
+	- marks the record `confirmed` once confirmations >= `web3-laravel.confirmations_required` (default 6).
+- You can tune the threshold in `config/web3-laravel.php`:
+
+```php
+// config/web3-laravel.php
+'confirmations_required' => 6,
+```
+
+WebSocket/event-driven mode
+
+- Set the mode and (optionally) a WS endpoint in `config/web3-laravel.php`:
+
+```php
+'confirmations_mode' => 'websocket',
+'default_ws' => 'wss://your-node.example/ws',
+// or per-chain mapping:
+'ws_networks' => [
+	8453 => 'wss://mainnet.base.org',
+],
+```
+
+- Run the watcher (long-running):
+
+```bash
+php artisan web3:watch-confirmations --chainId=8453 --interval=5
+```
+
+- The watcher subscribes to new blocks (when supported) and dispatches confirmation checks for submitted transactions immediately.
+
+Advanced: manual estimation & fees
+
+```php
+// Service-level helpers are available if you need them
+$svc = app(Roberts\Web3Laravel\Services\TransactionService::class);
+$gasHex = $svc->estimateGas($wallet, ['to' => $to, 'value' => $value, 'data' => $data]);
+$fees = $svc->suggestFees($wallet); // ['priority' => '0x..', 'max' => '0x..']
 ```
 
 ## Features - Core Functionality
@@ -123,7 +220,7 @@ Calling Contract Functions: A fluent API for calling "view" or "pure" functions 
 
 Executing Contract Functions: A secure way to execute state-changing functions that require a signed transaction and gas. This method should handle the signing, nonce management, and broadcasting of the transaction.
 
-Asynchronous Operations: All state-changing transactions should be handled as queued jobs. The package should provide a base job class or a command to handle transaction submission, which prevents the web application from being blocked while waiting for a transaction to be mined.
+Asynchronous Operations: All state-changing transactions are handled as queued jobs. Creating a `Transaction` model dispatches an event that enqueues a job (`SubmitTransaction`) to sign and broadcast, preventing the web application from blocking. The model is updated with `status` and `tx_hash` automatically.
 
 Additional Features
 ABI Management: The package could include functionality to retrieve and cache ABIs from the database, block explorers, or local files, making it easy to interact with a contract without manually loading the ABI each time.

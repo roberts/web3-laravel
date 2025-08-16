@@ -14,6 +14,21 @@ return [
     // Request timeout for HTTP/WebSocket providers (seconds)
     'request_timeout' => 10,
 
+    // Required confirmations for a transaction to be considered 'confirmed'
+    'confirmations_required' => 6,
+
+    // Confirmation strategy: 'polling' (default) or 'websocket'.
+    // When set to 'websocket', run the watcher command to track new blocks.
+    'confirmations_mode' => 'polling',
+    // Polling interval in seconds (used by polling job/watcher fallback)
+    'confirmations_poll_interval' => 10,
+
+    // Optional WebSocket endpoints. If not set, we try to convert HTTP to WS (http=>ws, https=>wss).
+    'default_ws' => null,
+    'ws_networks' => [
+        // 8453 => 'wss://mainnet.base.org',
+    ],
+
     // Optional static chainId=>rpc mapping. This takes priority over DB when set.
     // Example:
     // 1 => 'https://mainnet.infura.io/v3/xxx',

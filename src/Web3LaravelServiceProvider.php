@@ -27,11 +27,13 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 'create_wallets_table',
                 'create_contracts_table',
                 'create_tokens_table',
+                'create_transactions_table',
             ])
             ->hasCommands([
                 Web3LaravelCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletCreateCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletListCommand::class,
+                \Roberts\Web3Laravel\Console\Commands\WatchConfirmationsCommand::class,
             ]);
     }
 
@@ -48,5 +50,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         $this->app->singleton(TransactionService::class, function ($app) {
             return new TransactionService($app->make(Web3Laravel::class));
         });
+        
+    // Register event service provider for package
+    $this->app->register(\Roberts\Web3Laravel\Providers\EventServiceProvider::class);
     }
 }
