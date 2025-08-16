@@ -14,15 +14,13 @@ class SubmitTransaction implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public int $transactionId)
-    {
-    }
+    public function __construct(public int $transactionId) {}
 
     public function handle(TransactionService $tx): void
     {
         /** @var Transaction|null $model */
         $model = Transaction::query()->find($this->transactionId);
-        if (!$model) {
+        if (! $model) {
             return;
         }
 
@@ -38,7 +36,7 @@ class SubmitTransaction implements ShouldQueue
         if ($model->is_1559) {
             $payload['maxFeePerGas'] = $model->fee_max;
             $payload['maxPriorityFeePerGas'] = $model->priority_max;
-            if (!empty($model->access_list)) {
+            if (! empty($model->access_list)) {
                 $payload['accessList'] = json_decode($model->access_list, true) ?: [];
             }
         } else {

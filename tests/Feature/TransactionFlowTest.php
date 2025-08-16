@@ -9,7 +9,7 @@ it('dispatches event and attempts to submit transaction', function () {
     $tx = Transaction::factory()->create([
         'wallet_id' => $wallet->id,
         'from' => $wallet->address,
-        'to' => '0x' . str_repeat('0', 40),
+        'to' => '0x'.str_repeat('0', 40),
         'value' => '0x0',
         'gas_limit' => 21000,
         'is_1559' => false,
@@ -17,5 +17,5 @@ it('dispatches event and attempts to submit transaction', function () {
     ]);
 
     $tx->refresh();
-    expect(in_array($tx->status, ['pending','submitted','failed']))->toBeTrue();
+    expect(in_array($tx->status, ['pending', 'submitted', 'failed']))->toBeTrue();
 });

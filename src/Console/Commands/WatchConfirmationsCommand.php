@@ -10,6 +10,7 @@ use Roberts\Web3Laravel\Web3Laravel;
 class WatchConfirmationsCommand extends Command
 {
     protected $signature = 'web3:watch-confirmations {--chainId=} {--interval=5}';
+
     protected $description = 'Track transaction confirmations using WebSocket (or fallback polling) and update DB records to confirmed.';
 
     public function handle(Web3Laravel $manager)
@@ -35,7 +36,9 @@ class WatchConfirmationsCommand extends Command
             // Use newHeads subscription if available
             try {
                 $eth->subscribe('newHeads', function ($err, $block) use (&$lastBlock) {
-                    if ($err) { return; }
+                    if ($err) {
+                        return;
+                    }
                     $lastBlock = $block;
                 });
             } catch (\Throwable $e) {
@@ -44,11 +47,13 @@ class WatchConfirmationsCommand extends Command
             }
         }
 
-    while (true) {
-            if (!$supportsSub) {
+        while (true) {
+            if (! $supportsSub) {
                 $blockNumber = null;
                 $eth->blockNumber(function ($err, $res) use (&$blockNumber) {
-                    if (!$err) { $blockNumber = $res; }
+                    if (! $err) {
+                        $blockNumber = $res;
+                    }
                 });
                 $lastBlock = $blockNumber;
             }
@@ -66,6 +71,6 @@ class WatchConfirmationsCommand extends Command
             sleep($interval);
         }
 
-    // Long-running command; no return needed
+        // Long-running command; no return needed
     }
 }

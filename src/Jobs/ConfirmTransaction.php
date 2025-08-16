@@ -22,12 +22,12 @@ class ConfirmTransaction implements ShouldQueue
     {
         /** @var Transaction|null $tx */
         $tx = Transaction::query()->find($this->transactionId);
-        if (!$tx || empty($tx->tx_hash)) {
+        if (! $tx || empty($tx->tx_hash)) {
             return;
         }
 
         $wallet = $tx->wallet ?? $tx->wallet()->first();
-        if (!$wallet) {
+        if (! $wallet) {
             return;
         }
 
@@ -45,18 +45,22 @@ class ConfirmTransaction implements ShouldQueue
         }
 
         // No receipt yet; re-dispatch with a small delay
-        if (!$receipt) {
+        if (! $receipt) {
             static::dispatch($tx->id)->delay(now()->addSeconds(10));
+
             return;
         }
 
         // Determine confirmations
         $currentBlock = null;
         $eth->blockNumber(function ($err, $res) use (&$currentBlock) {
-            if (!$err) { $currentBlock = $res; }
+            if (! $err) {
+                $currentBlock = $res;
+            }
         });
         if (empty($receipt->blockNumber) || $currentBlock === null) {
             static::dispatch($tx->id)->delay(now()->addSeconds(10));
+
             return;
         }
 
@@ -78,6 +82,7 @@ class ConfirmTransaction implements ShouldQueue
                     'receipt' => $receipt,
                 ]),
             ]);
+
             return;
         }
 

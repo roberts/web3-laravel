@@ -41,15 +41,17 @@ class Web3Laravel
     {
         $wsUrl = $ws ?: $this->resolveWsUrl($chainId);
         $timeout = (int) ($this->config['request_timeout'] ?? 10);
-        if (!$wsUrl) {
+        if (! $wsUrl) {
             // Fallback to HTTP if WS not configured
             return $this->web3($chainId, null);
         }
         // Create WS provider if available, else fallback to HTTP
         if (class_exists('Web3\\Providers\\WebSocketProvider')) {
             $providerClass = 'Web3\\Providers\\WebSocketProvider';
+
             return new Web3(new $providerClass($wsUrl, $timeout));
         }
+
         return $this->web3($chainId, null);
     }
 

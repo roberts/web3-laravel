@@ -20,6 +20,7 @@ class TransactionService
         $client = $from->web3();
         $eth = $client->eth;
         $payload = array_merge(['from' => strtolower($from->address)], $tx);
+
         return (string) $this->ethCall($eth, 'estimateGas', [$payload, $blockTag]);
     }
 
@@ -33,7 +34,7 @@ class TransactionService
         } catch (\Throwable) {
             $priority = Web3Utils::toHex(1_000_000_000, true); // 1 gwei fallback
         }
-        if (!is_string($priority)) {
+        if (! is_string($priority)) {
             $priority = Web3Utils::toHex($priority, true);
         }
         // use gasPrice as a simple maxFee fallback
@@ -42,7 +43,7 @@ class TransactionService
         } catch (\Throwable) {
             $gp = $priority;
         }
-        if (!is_string($gp)) {
+        if (! is_string($gp)) {
             $gp = Web3Utils::toHex($gp, true);
         }
 
@@ -91,14 +92,14 @@ class TransactionService
         }
 
         // Switch to EIP-1559 if fields present
-    $is1559 = isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) || (($tx['type'] ?? null) === 2);
+        $is1559 = isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) || (($tx['type'] ?? null) === 2);
         if ($is1559) {
             return $this->sendEip1559($from, [
                 'nonce' => $nonce,
                 'to' => $to,
                 'value' => $value,
                 'data' => $data,
-        'gas' => $tx['gas'] ?? $tx['gasLimit'] ?? $gasLimit,
+                'gas' => $tx['gas'] ?? $tx['gasLimit'] ?? $gasLimit,
                 'chainId' => $chainId,
                 'maxFeePerGas' => $tx['maxFeePerGas'] ?? null,
                 'maxPriorityFeePerGas' => $tx['maxPriorityFeePerGas'] ?? null,
@@ -115,7 +116,7 @@ class TransactionService
             throw new \RuntimeException('Signing not available. Please require web3p/ethereum-tx.');
         }
 
-    $txData = [
+        $txData = [
             'nonce' => Web3Utils::toHex($nonce, true),
             'gasPrice' => Web3Utils::toHex($gasPrice, true),
             'gas' => Web3Utils::toHex($gasLimit, true),

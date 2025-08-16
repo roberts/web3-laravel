@@ -106,8 +106,7 @@ trait InteractsWithWeb3
     /**
      * Estimate gas for a transaction from this address.
      *
-     * @param array $tx Example: ['to' => '0x..', 'value' => '0x..', 'data' => '0x..']
-     * @param string $blockTag
+     * @param  array  $tx  Example: ['to' => '0x..', 'value' => '0x..', 'data' => '0x..']
      * @return string Hex quantity (0x...)
      */
     public function estimateGas(array $tx, string $blockTag = 'latest'): string

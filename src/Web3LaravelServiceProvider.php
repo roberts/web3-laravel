@@ -50,8 +50,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         $this->app->singleton(TransactionService::class, function ($app) {
             return new TransactionService($app->make(Web3Laravel::class));
         });
-        
-    // Register event service provider for package
-    $this->app->register(\Roberts\Web3Laravel\Providers\EventServiceProvider::class);
+
+        // Register event service provider for package
+        $this->app->register(\Roberts\Web3Laravel\Providers\EventServiceProvider::class);
     }
 }
