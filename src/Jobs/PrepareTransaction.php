@@ -14,15 +14,13 @@ class PrepareTransaction implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public int $transactionId)
-    {
-    }
+    public function __construct(public int $transactionId) {}
 
     public function handle(TransactionService $svc): void
     {
         /** @var Transaction|null $tx */
         $tx = Transaction::query()->find($this->transactionId);
-        if (!$tx) {
+        if (! $tx) {
             return;
         }
 
@@ -30,8 +28,9 @@ class PrepareTransaction implements ShouldQueue
         $tx->update(['status' => 'preparing']);
 
         $wallet = $tx->wallet ?? $tx->wallet()->first();
-        if (!$wallet) {
+        if (! $wallet) {
             $tx->update(['status' => 'failed', 'error' => 'wallet_not_found']);
+
             return;
         }
 
@@ -88,13 +87,16 @@ class PrepareTransaction implements ShouldQueue
         // Balance check (best-effort)
         try {
             $balanceHex = $wallet->balance();
-            if (!is_string($balanceHex)) { $balanceHex = (string) $balanceHex; }
+            if (! is_string($balanceHex)) {
+                $balanceHex = (string) $balanceHex;
+            }
             $requiredHex = $this->estimateRequiredWeiHex($tx);
             if ($requiredHex && $this->hexCompare($balanceHex, $requiredHex) < 0) {
                 $tx->update([
                     'status' => 'failed',
                     'error' => trim(($tx->error ? $tx->error.' ' : '').'insufficient_funds'),
                 ]);
+
                 return;
             }
         } catch (\Throwable $e) {
@@ -113,7 +115,9 @@ class PrepareTransaction implements ShouldQueue
     {
         $valueHex = is_string($tx->value) ? $tx->value : \Web3\Utils::toHex($tx->value, true);
         $gas = (int) ($tx->gas_limit ?? 0);
-        if ($gas <= 0) { return $valueHex; }
+        if ($gas <= 0) {
+            return $valueHex;
+        }
 
         $priceHex = null;
         if ($tx->is_1559) {
@@ -121,9 +125,12 @@ class PrepareTransaction implements ShouldQueue
         } else {
             $priceHex = $tx->gwei;
         }
-        if (!$priceHex) { return $valueHex; }
+        if (! $priceHex) {
+            return $valueHex;
+        }
 
         $gasCostHex = $this->mulHexByInt($priceHex, $gas);
+
         return $this->addHex($valueHex, $gasCostHex);
     }
 
@@ -136,24 +143,31 @@ class PrepareTransaction implements ShouldQueue
     {
         $a = ltrim($this->strip0x($a), '0');
         $b = ltrim($this->strip0x($b), '0');
-        $carry = 0; $res = '';
-        $i = strlen($a) - 1; $j = strlen($b) - 1;
+        $carry = 0;
+        $res = '';
+        $i = strlen($a) - 1;
+        $j = strlen($b) - 1;
         while ($i >= 0 || $j >= 0 || $carry) {
             $da = $i >= 0 ? hexdec($a[$i]) : 0;
             $db = $j >= 0 ? hexdec($b[$j]) : 0;
             $sum = $da + $db + $carry;
             $res = dechex($sum % 16).$res;
             $carry = intdiv($sum, 16);
-            $i--; $j--;
+            $i--;
+            $j--;
         }
+
         return '0x'.($res === '' ? '0' : ltrim($res, '0'));
     }
 
     protected function mulHexByInt(string $hex, int $mult): string
     {
         $hex = ltrim($this->strip0x($hex), '0');
-        if ($mult === 0 || $hex === '') { return '0x0'; }
-        $carry = 0; $res = '';
+        if ($mult === 0 || $hex === '') {
+            return '0x0';
+        }
+        $carry = 0;
+        $res = '';
         for ($i = strlen($hex) - 1; $i >= 0; $i--) {
             $d = hexdec($hex[$i]);
             $prod = $d * $mult + $carry;
@@ -164,6 +178,7 @@ class PrepareTransaction implements ShouldQueue
             $res = dechex($carry % 16).$res;
             $carry = intdiv($carry, 16);
         }
+
         return '0x'.ltrim($res, '0');
     }
 
@@ -172,8 +187,12 @@ class PrepareTransaction implements ShouldQueue
     {
         $a = ltrim($this->strip0x($a), '0');
         $b = ltrim($this->strip0x($b), '0');
-        $la = strlen($a); $lb = strlen($b);
-        if ($la !== $lb) { return $la < $lb ? -1 : 1; }
+        $la = strlen($a);
+        $lb = strlen($b);
+        if ($la !== $lb) {
+            return $la < $lb ? -1 : 1;
+        }
+
         return $a === $b ? 0 : ($a < $b ? -1 : 1);
     }
 }

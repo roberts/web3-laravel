@@ -9,6 +9,6 @@ class SignAndSendTransaction
 {
     public function handle(TransactionRequested $event): void
     {
-    PrepareTransaction::dispatch($event->transaction->id);
+        PrepareTransaction::dispatch($event->transaction->id);
     }
 }
