@@ -50,6 +50,7 @@ trait InteractsWithWeb3
             }
             throw new InvalidArgumentException('eth call error');
         }
+
         return $result;
     }
 
@@ -60,6 +61,7 @@ trait InteractsWithWeb3
         if (is_object($balance) && method_exists($balance, 'toString')) {
             return (string) $balance->toString();
         }
+
         return (string) $balance;
     }
 
@@ -75,6 +77,7 @@ trait InteractsWithWeb3
         if (is_object($nonce) && method_exists($nonce, 'toString')) {
             return (string) $nonce->toString();
         }
+
         return (string) $nonce;
     }
 
@@ -90,6 +93,7 @@ trait InteractsWithWeb3
         if (is_object($price) && method_exists($price, 'toString')) {
             return (string) $price->toString();
         }
+
         return (string) $price;
     }
 
@@ -104,6 +108,7 @@ trait InteractsWithWeb3
     {
         /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
         $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
+
         return $svc->sendRaw($this, $tx);
     }
 }

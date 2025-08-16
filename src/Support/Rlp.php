@@ -15,10 +15,11 @@ class Rlp
             return $input;
         }
         if ($len <= 55) {
-            return chr(0x80 + $len) . $input;
+            return chr(0x80 + $len).$input;
         }
         $lenBytes = self::toBinary($len);
-        return chr(0xB7 + strlen($lenBytes)) . $lenBytes . $input;
+
+        return chr(0xB7 + strlen($lenBytes)).$lenBytes.$input;
     }
 
     /** Encode a list of binary strings per RLP. */
@@ -30,10 +31,11 @@ class Rlp
         }
         $len = strlen($payload);
         if ($len <= 55) {
-            return chr(0xC0 + $len) . $payload;
+            return chr(0xC0 + $len).$payload;
         }
         $lenBytes = self::toBinary($len);
-        return chr(0xF7 + strlen($lenBytes)) . $lenBytes . $payload;
+
+        return chr(0xF7 + strlen($lenBytes)).$lenBytes.$payload;
     }
 
     /** Convert integer to big-endian binary (no leading zeros). */
@@ -44,9 +46,10 @@ class Rlp
         }
         $bin = '';
         while ($value > 0) {
-            $bin = chr($value & 0xFF) . $bin;
+            $bin = chr($value & 0xFF).$bin;
             $value >>= 8;
         }
+
         return $bin;
     }
 
@@ -56,23 +59,25 @@ class Rlp
         if ($value === 0) {
             return chr(0x80);
         }
+
         return self::encodeString(self::toBinary($value));
     }
 
     /** Encode a hex string (0x...) to RLP string. */
     public static function encodeHex(string $hex): string
     {
-        if (!is_string($hex)) {
+        if (! is_string($hex)) {
             throw new InvalidArgumentException('Hex must be string.');
         }
         $hex = Web3Utils::stripZero($hex);
-        if ($hex === '' ) {
+        if ($hex === '') {
             return chr(0x80); // empty
         }
         if (strlen($hex) % 2 !== 0) {
-            $hex = '0' . $hex;
+            $hex = '0'.$hex;
         }
         $bin = pack('H*', $hex);
+
         return self::encodeString($bin);
     }
 }

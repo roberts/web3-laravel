@@ -12,23 +12,23 @@ class ContractCaller
 
     public function __construct(protected Web3Laravel $web3)
     {
-        $this->abi = new Ethabi();
+        $this->abi = new Ethabi;
     }
 
     /**
      * Encode a function call using ABI and perform eth_call.
      *
-     * @param array $abi ABI JSON array
-     * @param string $to Contract address
-     * @param string $function Function name
-     * @param array $params Function params
-     * @param string|null $from Optional from address
-     * @param string $blockTag default 'latest'
+     * @param  array  $abi  ABI JSON array
+     * @param  string  $to  Contract address
+     * @param  string  $function  Function name
+     * @param  array  $params  Function params
+     * @param  string|null  $from  Optional from address
+     * @param  string  $blockTag  default 'latest'
      * @return array decoded outputs
      */
     public function call(array $abi, string $to, string $function, array $params = [], ?string $from = null, string $blockTag = 'latest'): array
     {
-    $eth = $this->web3->web3()->eth;
+        $eth = $this->web3->web3()->eth;
 
         $data = $this->encodeCallData($abi, $function, $params);
 
@@ -50,10 +50,11 @@ class ContractCaller
     {
         $method = $this->findFunction($abi, $function);
         $inputTypes = array_map(fn ($i) => $i['type'] ?? 'bytes', $method['inputs'] ?? []);
-        $signature = ($method['name'] ?? $function) . '(' . implode(',', $inputTypes) . ')';
+        $signature = ($method['name'] ?? $function).'('.implode(',', $inputTypes).')';
         $selector = substr(Web3Utils::sha3($signature), 2, 8);
         $encodedParams = $this->abi->encodeParameters($inputTypes, $params);
-        return '0x' . $selector . substr($encodedParams, 2);
+
+        return '0x'.$selector.substr($encodedParams, 2);
     }
 
     /** Decode a 0x-hex return payload into PHP values per ABI outputs. */
@@ -63,7 +64,7 @@ class ContractCaller
         $outputs = $method['outputs'] ?? [];
         $outputTypes = array_map(fn ($o) => $o['type'] ?? 'bytes', $outputs);
         // Ethabi::decodeParameters expects the outputs types and a 0x-hex string
-    $decoded = (array) $this->abi->decodeParameters($outputTypes, $raw);
+        $decoded = (array) $this->abi->decodeParameters($outputTypes, $raw);
         // Normalize big integers to decimal strings for convenience
         foreach ($decoded as $i => $val) {
             $type = $outputTypes[$i] ?? 'bytes';
@@ -71,6 +72,7 @@ class ContractCaller
                 $decoded[$i] = $val->toString();
             }
         }
+
         return $decoded;
     }
 

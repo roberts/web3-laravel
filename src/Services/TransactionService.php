@@ -2,10 +2,10 @@
 
 namespace Roberts\Web3Laravel\Services;
 
-use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Web3Laravel;
-use Roberts\Web3Laravel\Support\Rlp;
 use Elliptic\EC;
+use Roberts\Web3Laravel\Models\Wallet;
+use Roberts\Web3Laravel\Support\Rlp;
+use Roberts\Web3Laravel\Web3Laravel;
 use Web3\Utils as Web3Utils;
 
 class TransactionService
@@ -18,8 +18,8 @@ class TransactionService
      * Build, sign (legacy or EIP-155), and send a raw transaction.
      * Minimal support: legacy gasPrice or EIP-155 (pre-1559) style. 1559 fields can be passed but not signed here yet.
      *
-     * @param Wallet $from Wallet holding the private key
-     * @param array $tx [to (hex), value (hex|int), data (hex), gas (int), gasPrice (int), nonce (int), chainId (int)]
+     * @param  Wallet  $from  Wallet holding the private key
+     * @param  array  $tx  [to (hex), value (hex|int), data (hex), gas (int), gasPrice (int), nonce (int), chainId (int)]
      * @return string tx hash (0x...)
      */
     public function sendRaw(Wallet $from, array $tx): string
@@ -56,9 +56,9 @@ class TransactionService
         // Normalize
         $toHex = $to ? Web3Utils::toHex($to) : '';
         $valueHex = is_string($value) ? $value : Web3Utils::toHex($value, true);
-        $dataHex = Web3Utils::isZeroPrefixed($data) ? $data : ('0x' . ltrim($data, 'x'));
+        $dataHex = Web3Utils::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
 
-        if (!class_exists('Web3p\\EthereumTx\\Transaction')) {
+        if (! class_exists('Web3p\\EthereumTx\\Transaction')) {
             throw new \RuntimeException('Signing not available. Please require web3p/ethereum-tx.');
         }
 
@@ -79,9 +79,10 @@ class TransactionService
             throw new \RuntimeException('Wallet has no private key available for signing.');
         }
         $raw = $txObj->sign($privKeyHex); // hex without 0x
-        $rawHex = '0x' . ltrim($raw, '0x');
+        $rawHex = '0x'.ltrim($raw, '0x');
 
         $txHash = $eth->sendRawTransaction($rawHex);
+
         return $txHash;
     }
 
@@ -127,7 +128,7 @@ class TransactionService
         $nonceHex = is_string($nonce) ? $nonce : Web3Utils::toHex($nonce, true);
         $toHex = $to ? Web3Utils::toHex($to) : '';
         $valueHex = is_string($value) ? $value : Web3Utils::toHex($value, true);
-        $dataHex = Web3Utils::isZeroPrefixed($data) ? $data : ('0x' . ltrim($data, 'x'));
+        $dataHex = Web3Utils::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
         $priorityHex = is_string($priority) ? $priority : Web3Utils::toHex($priority, true);
         $maxFeeHex = is_string($maxFee) ? $maxFee : Web3Utils::toHex($maxFee, true);
         $gasHex = Web3Utils::toHex($gasLimit, true);
@@ -146,8 +147,8 @@ class TransactionService
         ];
 
         $rlpForSign = Rlp::encodeList($signItems);
-        $payload = "\x02" . $rlpForSign;
-        $hashHex = Web3Utils::sha3('0x' . bin2hex($payload));
+        $payload = "\x02".$rlpForSign;
+        $hashHex = Web3Utils::sha3('0x'.bin2hex($payload));
 
         $ec = new EC('secp256k1');
         $priv = $from->decryptKey() ?? '';
@@ -166,9 +167,10 @@ class TransactionService
             Rlp::encodeHex($sHex),
         ]);
         $signedRlp = Rlp::encodeList($signedItems);
-        $rawHex = '0x02' . bin2hex($signedRlp);
+        $rawHex = '0x02'.bin2hex($signedRlp);
 
         $txHash = $eth->sendRawTransaction($rawHex);
+
         return $txHash;
     }
 
@@ -186,8 +188,9 @@ class TransactionService
             if ($error instanceof \Throwable) {
                 throw $error;
             }
-            throw new \RuntimeException('eth call error for ' . $method);
+            throw new \RuntimeException('eth call error for '.$method);
         }
+
         return $result;
     }
 
@@ -206,6 +209,7 @@ class TransactionService
                 Rlp::encodeList($encodedKeys),
             ]);
         }
+
         return Rlp::encodeList($entries);
     }
 }

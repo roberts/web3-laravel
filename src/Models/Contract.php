@@ -46,6 +46,7 @@ class Contract extends Model
     {
         /** @var ContractCaller $svc */
         $svc = app(ContractCaller::class);
+
         return $svc->call($this->abi ?? [], (string) $this->address, $function, $params, $from, $blockTag);
     }
 }
