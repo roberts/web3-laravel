@@ -20,6 +20,9 @@ You can publish and run the migrations with:
 ```bash
 php artisan vendor:publish --tag="web3-laravel-migrations"
 php artisan migrate
+
+# Optional: seed common chains
+php artisan db:seed --class="Roberts\\Web3Laravel\\Database\\Seeders\\BlockchainSeeder"
 ```
 
 You can publish the config file with:
@@ -28,10 +31,19 @@ You can publish the config file with:
 php artisan vendor:publish --tag="web3-laravel-config"
 ```
 
-This is the contents of the published config file:
+This is the contents of the published config file (defaults shown):
 
 ```php
 return [
+	'use_database' => env('WEB3_USE_DATABASE', true),
+	'default_rpc' => env('WEB3_DEFAULT_RPC', 'http://localhost:8545'),
+	'default_chain_id' => env('WEB3_DEFAULT_CHAIN_ID', 8453),
+	'request_timeout' => env('WEB3_REQUEST_TIMEOUT', 10),
+	'networks' => [
+		// 1 => 'https://mainnet.infura.io/v3/xxx',
+		// 8453 => 'https://mainnet.base.org',
+		// 84532 => 'https://sepolia.base.org',
+	],
 ];
 ```
 
@@ -44,8 +56,29 @@ php artisan vendor:publish --tag="web3-laravel-views"
 ## Usage
 
 ```php
-$web3Laravel = new Roberts\Web3Laravel();
-echo $web3Laravel->echoPhrase('Hello, Roberts!');
+use Roberts\Web3Laravel\Facades\Web3Laravel as Web3M;
+
+// Resolve a Web3 client for default chain (config or DB):
+$web3 = Web3M::web3();
+$web3->clientVersion(function ($err, $version) {
+	if ($err) { throw $err; }
+	dump($version);
+});
+
+// Resolve for a specific chain id:
+$web3 = Web3M::web3(8453); // Base mainnet
+
+// Or force a specific RPC URL:
+$web3 = Web3M::web3(null, 'https://mainnet.base.org');
+
+// Get the resolved RPC URL without instantiating:
+$rpc = Web3M::resolveRpcUrl(8453);
+```
+
+You can also use the built-in ping command to verify connectivity:
+
+```bash
+php artisan web3:ping --chainId=8453
 ```
 
 ## Features - Core Functionality
