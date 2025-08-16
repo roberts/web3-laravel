@@ -23,6 +23,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 'create_web3_laravel_table',
                 'create_blockchains_table',
                 'create_wallets_table',
+                'create_contracts_table',
+                'create_tokens_table',
             ])
             ->hasCommands([
                 Web3LaravelCommand::class,
