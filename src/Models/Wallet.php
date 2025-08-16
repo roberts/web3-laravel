@@ -42,6 +42,7 @@ class Wallet extends Model
     {
         if ($value === null || $value === '') {
             $this->attributes['key'] = null;
+
             return;
         }
 
@@ -62,7 +63,7 @@ class Wallet extends Model
     public function decryptKey(): ?string
     {
         $encrypted = $this->attributes['key'] ?? null;
-        if (!is_string($encrypted) || $encrypted === '') {
+        if (! is_string($encrypted) || $encrypted === '') {
             return null;
         }
         try {
@@ -82,7 +83,8 @@ class Wallet extends Model
         $len = strlen($plain);
         $start = substr($plain, 0, 6);
         $end = substr($plain, max(0, $len - 4));
-        return $start . str_repeat('*', max(0, $len - 10)) . $end;
+
+        return $start.str_repeat('*', max(0, $len - 10)).$end;
     }
 
     // Scopes

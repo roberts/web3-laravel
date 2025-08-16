@@ -33,7 +33,7 @@ class WalletListCommand extends Command
             ];
         })->all();
 
-        $this->table(['ID','Address','Chain','Owner','Active','Last Used','Key'], $rows);
+        $this->table(['ID', 'Address', 'Chain', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
 
         return self::SUCCESS;
     }

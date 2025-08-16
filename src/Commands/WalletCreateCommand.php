@@ -21,12 +21,13 @@ class WalletCreateCommand extends Command
 
         $owner = null;
         if ($ownerType && $ownerId) {
-            if (!class_exists($ownerType)) {
+            if (! class_exists($ownerType)) {
                 $this->error('Owner type not found: '.$ownerType);
+
                 return self::FAILURE;
             }
             $owner = $ownerType::query()->find($ownerId);
-            if (!$owner) {
+            if (! $owner) {
                 throw new ModelNotFoundException("Owner not found for {$ownerType} id={$ownerId}");
             }
         }
@@ -34,7 +35,7 @@ class WalletCreateCommand extends Command
         $blockchain = null;
         if (is_numeric($chainId)) {
             $blockchain = Blockchain::query()->where('chain_id', (int) $chainId)->first();
-            if (!$blockchain) {
+            if (! $blockchain) {
                 $this->warn('Blockchain with chain_id='.$chainId.' not found, leaving blockchain_id null.');
             }
         }

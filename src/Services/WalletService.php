@@ -16,7 +16,7 @@ class WalletService
      * - Derives Ethereum address from the generated private key.
      * - Encrypts key via Wallet mutator.
      *
-     * @param Model|Authenticatable|null $owner Optional owner model; when null, owner fields are left null.
+     * @param  Model|Authenticatable|null  $owner  Optional owner model; when null, owner fields are left null.
      */
     public function create(array $attributes = [], ?Model $owner = null, ?Blockchain $blockchain = null): Wallet
     {

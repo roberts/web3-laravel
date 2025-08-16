@@ -6,7 +6,7 @@ use Roberts\Web3Laravel\Services\WalletService;
 
 it('creates a wallet with encrypted key and derived address', function () {
     $chain = Blockchain::factory()->create();
-    $service = new WalletService();
+    $service = new WalletService;
 
     $wallet = $service->create([], null, $chain);
 
