@@ -36,12 +36,12 @@ This is the contents of the published config file (defaults shown):
 ```php
 return [
 	'use_database' => env('WEB3_USE_DATABASE', true),
-	'default_rpc' => env('WEB3_DEFAULT_RPC', 'http://localhost:8545'),
+	'default_rpc' => env('WEB3_DEFAULT_RPC', 'https://mainnet.base.org'),
 	'default_chain_id' => env('WEB3_DEFAULT_CHAIN_ID', 8453),
 	'request_timeout' => env('WEB3_REQUEST_TIMEOUT', 10),
 	'networks' => [
 		// 1 => 'https://mainnet.infura.io/v3/xxx',
-		// 8453 => 'https://mainnet.base.org',
+		8453 => 'https://mainnet.base.org',
 		// 84532 => 'https://sepolia.base.org',
 	],
 ];

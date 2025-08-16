@@ -31,6 +31,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'ETH',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'is_default' => true,
             ],
             [
                 'name' => 'Polygon',

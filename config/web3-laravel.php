@@ -5,8 +5,8 @@ return [
     // Use database 'blockchains' table to resolve networks when true
     'use_database' => true,
 
-    // Default RPC endpoint used if nothing else resolves
-    'default_rpc' => 'http://localhost:8545',
+    // Default RPC endpoint used if nothing else resolves (Base mainnet)
+    'default_rpc' => 'https://mainnet.base.org',
 
     // Default chain id to use when a chain id isn't provided
     'default_chain_id' => 8453, // Base mainnet by default
@@ -26,7 +26,7 @@ return [
     // Optional WebSocket endpoints. If not set, we try to convert HTTP to WS (http=>ws, https=>wss).
     'default_ws' => null,
     'ws_networks' => [
-        // 8453 => 'wss://mainnet.base.org',
+    // 8453 => 'wss://mainnet.base.org',
     ],
 
     // Optional static chainId=>rpc mapping. This takes priority over DB when set.
@@ -35,6 +35,7 @@ return [
     // 8453 => 'https://mainnet.base.org',
     // 84532 => 'https://sepolia.base.org',
     'networks' => [
-        // leave empty by default
+        // Prefer Base by default
+        8453 => 'https://mainnet.base.org',
     ],
 ];

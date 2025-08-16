@@ -48,8 +48,8 @@ class ContractCaller
     /** Build 0x-prefixed data for a function call based on ABI and params. */
     public function encodeCallData(array $abi, string $function, array $params = []): string
     {
-        $method = $this->findFunction($abi, $function);
-        $inputTypes = array_map(fn ($i) => $i['type'] ?? 'bytes', $method['inputs'] ?? []);
+    $method = $this->findFunction($abi, $function);
+    $inputTypes = $this->normalizeParamTypes($method['inputs'] ?? []);
         $signature = ($method['name'] ?? $function).'('.implode(',', $inputTypes).')';
         $selector = substr(Web3Utils::sha3($signature), 2, 8);
         $encodedParams = $this->abi->encodeParameters($inputTypes, $params);
@@ -61,19 +61,12 @@ class ContractCaller
     public function decodeCallResult(array $abi, string $function, string $raw): array
     {
         $method = $this->findFunction($abi, $function);
-        $outputs = $method['outputs'] ?? [];
-        $outputTypes = array_map(fn ($o) => $o['type'] ?? 'bytes', $outputs);
+    $outputs = $method['outputs'] ?? [];
+    $outputTypes = $this->normalizeParamTypes($outputs);
         // Ethabi::decodeParameters expects the outputs types and a 0x-hex string
-        $decoded = (array) $this->abi->decodeParameters($outputTypes, $raw);
-        // Normalize big integers to decimal strings for convenience
-        foreach ($decoded as $i => $val) {
-            $type = $outputTypes[$i] ?? 'bytes';
-            if (is_object($val) && method_exists($val, 'toString') && str_starts_with($type, 'uint')) {
-                $decoded[$i] = $val->toString();
-            }
-        }
-
-        return $decoded;
+    $decoded = (array) $this->abi->decodeParameters($outputTypes, $raw);
+    // Deep-normalize: convert any BigInteger-like objects with toString into strings, recurse arrays
+    return $this->deepNormalize($decoded);
     }
 
     protected function findFunction(array $abi, string $name): array
@@ -84,5 +77,47 @@ class ContractCaller
             }
         }
         throw new \InvalidArgumentException("Function {$name} not found in ABI.");
+    }
+
+    /** Normalize ABI param entries to ethabi type strings, supporting tuple(s) and arrays. */
+    protected function normalizeParamTypes(array $params): array
+    {
+        $types = [];
+        foreach ($params as $param) {
+            $types[] = $this->normalizeType($param);
+        }
+        return $types;
+    }
+
+    protected function normalizeType(array $param): string
+    {
+        $type = (string) ($param['type'] ?? 'bytes');
+        // Handle tuple and tuple arrays
+        if (str_starts_with($type, 'tuple')) {
+            $suffix = substr($type, 5); // may be '', '[]', '[2]', etc
+            $components = $param['components'] ?? [];
+            $inner = [];
+            foreach ($components as $c) {
+                $inner[] = $this->normalizeType($c);
+            }
+            return '('.implode(',', $inner).')'.$suffix;
+        }
+        return $type;
+    }
+
+    /** Recursively normalize decoded values: objects with toString to strings, arrays deep. */
+    protected function deepNormalize($value)
+    {
+        if (is_array($value)) {
+            $out = [];
+            foreach ($value as $k => $v) {
+                $out[$k] = $this->deepNormalize($v);
+            }
+            return $out;
+        }
+        if (is_object($value) && method_exists($value, 'toString')) {
+            return (string) $value->toString();
+        }
+        return $value;
     }
 }
