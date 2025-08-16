@@ -36,7 +36,7 @@ class TokenFactory extends Factory
         ]);
     }
 
-    public function erc721(string $tokenId = null): self
+    public function erc721(?string $tokenId = null): self
     {
         return $this->state([
             'token_type' => TokenType::ERC721,
@@ -46,7 +46,7 @@ class TokenFactory extends Factory
         ]);
     }
 
-    public function erc1155(string $tokenId = null, string $quantity = '0'): self
+    public function erc1155(?string $tokenId = null, string $quantity = '0'): self
     {
         return $this->state([
             'token_type' => TokenType::ERC1155,

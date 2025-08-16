@@ -23,7 +23,7 @@ class ContractFactory extends Factory
         ];
     }
 
-    public function withAbi(array $abi = null): self
+    public function withAbi(?array $abi = null): self
     {
         return $this->state([
             'abi' => $abi ?? [
