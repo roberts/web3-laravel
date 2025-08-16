@@ -2,9 +2,9 @@
 
 namespace Roberts\Web3Laravel;
 
+use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
 
 class Web3LaravelServiceProvider extends PackageServiceProvider
 {
