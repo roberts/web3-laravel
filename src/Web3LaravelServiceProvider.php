@@ -3,6 +3,8 @@
 namespace Roberts\Web3Laravel;
 
 use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
+use Roberts\Web3Laravel\Services\ContractCaller;
+use Roberts\Web3Laravel\Services\TransactionService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -37,6 +39,14 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(Web3Laravel::class, function ($app) {
             return new Web3Laravel(config('web3-laravel'));
+        });
+
+        $this->app->singleton(ContractCaller::class, function ($app) {
+            return new ContractCaller($app->make(Web3Laravel::class));
+        });
+
+        $this->app->singleton(TransactionService::class, function ($app) {
+            return new TransactionService($app->make(Web3Laravel::class));
         });
     }
 }

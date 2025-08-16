@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Crypt;
+use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 
 class Wallet extends Model
 {
-    use HasFactory;
+    use HasFactory, InteractsWithWeb3;
 
     protected $table = 'wallets';
 

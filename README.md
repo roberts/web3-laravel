@@ -75,6 +75,28 @@ $web3 = Web3M::web3(null, 'https://mainnet.base.org');
 $rpc = Web3M::resolveRpcUrl(8453);
 ```
 
+Eloquent-style helpers:
+
+```php
+use Roberts\Web3Laravel\Models\Wallet;
+use Roberts\Web3Laravel\Models\Contract;
+
+$wallet = Wallet::first();
+$balance = $wallet->balance(); // getBalance()
+$nonce = $wallet->nonce();     // getTransactionCount()
+$gas = $wallet->gasPrice();    // getGasPrice()
+
+// Send a transaction (legacy fields; signing library required)
+$txHash = $wallet->send([
+	'to' => '0x0000000000000000000000000000000000000000',
+	'value' => 1000,
+]);
+
+// Contract read-only call using stored ABI on the model
+$contract = Contract::first();
+$result = $contract->call('balanceOf', [$wallet->address]);
+```
+
 You can also use the built-in ping command to verify connectivity:
 
 ```bash
