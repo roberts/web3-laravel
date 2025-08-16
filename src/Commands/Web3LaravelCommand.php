@@ -20,15 +20,16 @@ class Web3LaravelCommand extends Command
         $rpc = $this->option('rpc');
 
         $rpcUrl = $manager->resolveRpcUrl($chainId);
-        $this->info('RPC: ' . $rpcUrl);
+        $this->info('RPC: '.$rpcUrl);
 
         $web3 = $manager->web3($chainId, $rpc ?: null);
         $web3->clientVersion(function ($err, $version) {
             if ($err !== null) {
-                $this->error('Error: ' . $err->getMessage());
+                $this->error('Error: '.$err->getMessage());
+
                 return;
             }
-            $this->info('Client version: ' . (string) $version);
+            $this->info('Client version: '.(string) $version);
         });
 
         return self::SUCCESS;
