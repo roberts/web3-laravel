@@ -60,8 +60,8 @@ it('decodes tuple and array outputs correctly', function () {
     // We simulate: pair = (1, 0x000...0002)
     $tupleEncoded = '0x'
         // offset to tuple data (if dynamic) is not needed for simple single tuple in outputs with web3p Ethabi; encode as plain
-        . str_pad('1', 64, '0', STR_PAD_LEFT) // a = 1
-        . str_pad(substr(strtolower('0x0000000000000000000000000000000000000002'), 2), 64, '0', STR_PAD_LEFT); // b
+        .str_pad('1', 64, '0', STR_PAD_LEFT) // a = 1
+        .str_pad(substr(strtolower('0x0000000000000000000000000000000000000002'), 2), 64, '0', STR_PAD_LEFT); // b
     $decodedTuple = $svc->decodeCallResult($abi, 'info', $tupleEncoded);
     // Depending on decoder behavior, the tuple may be nested; normalize either way
     $pair = is_array($decodedTuple[0] ?? null) ? $decodedTuple[0] : $decodedTuple;
@@ -71,10 +71,10 @@ it('decodes tuple and array outputs correctly', function () {
     // For uint256[] = [1,2], proper dynamic return encoding is:
     // head: offset (0x20), then tail: length, elements...
     $arrayEncoded = '0x'
-        . str_pad(dechex(32), 64, '0', STR_PAD_LEFT) // offset = 0x20
-        . str_pad(dechex(2), 64, '0', STR_PAD_LEFT)  // length = 2
-        . str_pad(dechex(1), 64, '0', STR_PAD_LEFT)  // value[0]
-        . str_pad(dechex(2), 64, '0', STR_PAD_LEFT); // value[1]
+        .str_pad(dechex(32), 64, '0', STR_PAD_LEFT) // offset = 0x20
+        .str_pad(dechex(2), 64, '0', STR_PAD_LEFT)  // length = 2
+        .str_pad(dechex(1), 64, '0', STR_PAD_LEFT)  // value[0]
+        .str_pad(dechex(2), 64, '0', STR_PAD_LEFT); // value[1]
     $decodedArr = $svc->decodeCallResult($abi, 'values', $arrayEncoded);
     $arr = $decodedArr[0] ?? [];
     expect((string) ($arr[0] ?? ''))->toBe('1');

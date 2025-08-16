@@ -26,7 +26,7 @@ return [
     // Optional WebSocket endpoints. If not set, we try to convert HTTP to WS (http=>ws, https=>wss).
     'default_ws' => null,
     'ws_networks' => [
-    // 8453 => 'wss://mainnet.base.org',
+        // 8453 => 'wss://mainnet.base.org',
     ],
 
     // Optional static chainId=>rpc mapping. This takes priority over DB when set.

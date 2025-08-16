@@ -48,8 +48,8 @@ class ContractCaller
     /** Build 0x-prefixed data for a function call based on ABI and params. */
     public function encodeCallData(array $abi, string $function, array $params = []): string
     {
-    $method = $this->findFunction($abi, $function);
-    $inputTypes = $this->normalizeParamTypes($method['inputs'] ?? []);
+        $method = $this->findFunction($abi, $function);
+        $inputTypes = $this->normalizeParamTypes($method['inputs'] ?? []);
         $signature = ($method['name'] ?? $function).'('.implode(',', $inputTypes).')';
         $selector = substr(Web3Utils::sha3($signature), 2, 8);
         $encodedParams = $this->abi->encodeParameters($inputTypes, $params);
@@ -61,12 +61,13 @@ class ContractCaller
     public function decodeCallResult(array $abi, string $function, string $raw): array
     {
         $method = $this->findFunction($abi, $function);
-    $outputs = $method['outputs'] ?? [];
-    $outputTypes = $this->normalizeParamTypes($outputs);
+        $outputs = $method['outputs'] ?? [];
+        $outputTypes = $this->normalizeParamTypes($outputs);
         // Ethabi::decodeParameters expects the outputs types and a 0x-hex string
-    $decoded = (array) $this->abi->decodeParameters($outputTypes, $raw);
-    // Deep-normalize: convert any BigInteger-like objects with toString into strings, recurse arrays
-    return $this->deepNormalize($decoded);
+        $decoded = (array) $this->abi->decodeParameters($outputTypes, $raw);
+
+        // Deep-normalize: convert any BigInteger-like objects with toString into strings, recurse arrays
+        return $this->deepNormalize($decoded);
     }
 
     protected function findFunction(array $abi, string $name): array
@@ -86,6 +87,7 @@ class ContractCaller
         foreach ($params as $param) {
             $types[] = $this->normalizeType($param);
         }
+
         return $types;
     }
 
@@ -100,8 +102,10 @@ class ContractCaller
             foreach ($components as $c) {
                 $inner[] = $this->normalizeType($c);
             }
+
             return '('.implode(',', $inner).')'.$suffix;
         }
+
         return $type;
     }
 
@@ -113,11 +117,13 @@ class ContractCaller
             foreach ($value as $k => $v) {
                 $out[$k] = $this->deepNormalize($v);
             }
+
             return $out;
         }
         if (is_object($value) && method_exists($value, 'toString')) {
             return (string) $value->toString();
         }
+
         return $value;
     }
 }

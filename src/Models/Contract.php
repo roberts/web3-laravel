@@ -54,6 +54,7 @@ class Contract extends Model
     public function callValue(string $function, array $params = [], ?string $from = null, string $blockTag = 'latest')
     {
         $res = $this->call($function, $params, $from, $blockTag);
+
         return $res[0] ?? null;
     }
 
@@ -65,6 +66,7 @@ class Contract extends Model
             $args = $parameters[0] ?? [];
             $from = $parameters[1] ?? null;
             $blockTag = $parameters[2] ?? 'latest';
+
             return $this->call($fn, $args, $from, $blockTag);
         }
 
