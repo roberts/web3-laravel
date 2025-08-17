@@ -59,7 +59,7 @@ class SubmitTransaction implements ShouldQueue
                 'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Failed,
                 'error' => $e->getMessage(),
             ]);
-                event(new TransactionFailed($model->fresh(), $e->getMessage() ?: 'submission_failed'));
+            event(new TransactionFailed($model->fresh(), $e->getMessage() ?: 'submission_failed'));
         }
     }
 }

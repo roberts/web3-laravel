@@ -41,9 +41,14 @@ it('fires submitted event when broadcasting succeeds', function () {
     Event::fake();
 
     // Stub TransactionService to return a fake tx hash
-    app()->bind(TransactionService::class, fn () => new class() extends TransactionService {
+    app()->bind(TransactionService::class, fn () => new class extends TransactionService
+    {
         public function __construct() {}
-        public function sendRaw($wallet, array $payload): string { return '0xabc123'; }
+
+        public function sendRaw($wallet, array $payload): string
+        {
+            return '0xabc123';
+        }
     });
 
     $wallet = Wallet::factory()->create();
@@ -67,9 +72,14 @@ it('fires failed event when broadcasting throws', function () {
     Event::fake();
 
     // Stub TransactionService to throw
-    app()->bind(TransactionService::class, fn () => new class() extends TransactionService {
+    app()->bind(TransactionService::class, fn () => new class extends TransactionService
+    {
         public function __construct() {}
-        public function sendRaw($wallet, array $payload): string { throw new RuntimeException('boom'); }
+
+        public function sendRaw($wallet, array $payload): string
+        {
+            throw new RuntimeException('boom');
+        }
     });
 
     $wallet = Wallet::factory()->create();

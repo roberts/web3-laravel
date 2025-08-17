@@ -31,7 +31,7 @@ class Transaction extends Model
         'chain_id' => 'integer',
         'function_params' => 'array',
         'meta' => 'array',
-    'status' => TransactionStatus::class,
+        'status' => TransactionStatus::class,
     ];
 
     protected $dispatchesEvents = [
@@ -104,12 +104,35 @@ class Transaction extends Model
         return is_string($this->status) ? $this->status : ($this->status->value ?? (string) $this->status);
     }
 
-    public function isPending(): bool { return $this->status === TransactionStatus::Pending || $this->statusValue() === TransactionStatus::Pending->value; }
-    public function isPreparing(): bool { return $this->status === TransactionStatus::Preparing || $this->statusValue() === TransactionStatus::Preparing->value; }
-    public function isPrepared(): bool { return $this->status === TransactionStatus::Prepared || $this->statusValue() === TransactionStatus::Prepared->value; }
-    public function isSubmitted(): bool { return $this->status === TransactionStatus::Submitted || $this->statusValue() === TransactionStatus::Submitted->value; }
-    public function isConfirmed(): bool { return $this->status === TransactionStatus::Confirmed || $this->statusValue() === TransactionStatus::Confirmed->value; }
-    public function isFailed(): bool { return $this->status === TransactionStatus::Failed || $this->statusValue() === TransactionStatus::Failed->value; }
+    public function isPending(): bool
+    {
+        return $this->status === TransactionStatus::Pending || $this->statusValue() === TransactionStatus::Pending->value;
+    }
+
+    public function isPreparing(): bool
+    {
+        return $this->status === TransactionStatus::Preparing || $this->statusValue() === TransactionStatus::Preparing->value;
+    }
+
+    public function isPrepared(): bool
+    {
+        return $this->status === TransactionStatus::Prepared || $this->statusValue() === TransactionStatus::Prepared->value;
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->status === TransactionStatus::Submitted || $this->statusValue() === TransactionStatus::Submitted->value;
+    }
+
+    public function isConfirmed(): bool
+    {
+        return $this->status === TransactionStatus::Confirmed || $this->statusValue() === TransactionStatus::Confirmed->value;
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === TransactionStatus::Failed || $this->statusValue() === TransactionStatus::Failed->value;
+    }
 
     // Transition helpers
     public function markFailed(string $reason): void

@@ -28,7 +28,7 @@ class PrepareTransaction implements ShouldQueue
         }
 
         // Stage
-    $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Preparing]);
+        $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Preparing]);
         event(new TransactionPreparing($tx->fresh()));
 
         $wallet = $tx->wallet ?? $tx->wallet()->first();
@@ -116,7 +116,7 @@ class PrepareTransaction implements ShouldQueue
 
         // Persist any computed fields and advance
         $tx->save();
-    $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Prepared]);
+        $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Prepared]);
         event(new TransactionPrepared($tx->fresh()));
 
         SubmitTransaction::dispatch($tx->id);
