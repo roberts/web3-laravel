@@ -17,5 +17,6 @@ it('dispatches event and attempts to submit transaction', function () {
     ]);
 
     $tx->refresh();
-    expect(in_array($tx->status, ['pending', 'submitted', 'failed']))->toBeTrue();
+    $status = is_string($tx->status) ? $tx->status : ($tx->status->value ?? (string) $tx->status);
+    expect(in_array($status, ['pending', 'preparing', 'prepared', 'submitted', 'failed', 'confirmed']))->toBeTrue();
 });

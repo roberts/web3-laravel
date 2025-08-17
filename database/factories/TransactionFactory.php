@@ -25,7 +25,7 @@ class TransactionFactory extends Factory
             'priority_max' => '0x3b9aca00',
             'is_1559' => true,
             'chain_id' => $wallet->blockchain?->chain_id,
-            'status' => 'pending',
+            'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Pending,
         ];
     }
 

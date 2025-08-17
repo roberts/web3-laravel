@@ -7,6 +7,8 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Roberts\Web3Laravel\Events\TransactionFailed;
+use Roberts\Web3Laravel\Events\TransactionSubmitted;
 use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Services\TransactionService;
 
@@ -47,15 +49,17 @@ class SubmitTransaction implements ShouldQueue
             $hash = $tx->sendRaw($model->wallet, $payload);
             $model->update([
                 'tx_hash' => $hash,
-                'status' => 'submitted',
+                'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Submitted,
             ]);
+            event(new TransactionSubmitted($model->fresh()));
             // Kick off confirmation polling
             \Roberts\Web3Laravel\Jobs\ConfirmTransaction::dispatch($model->id)->delay(now()->addSeconds(10));
         } catch (\Throwable $e) {
             $model->update([
-                'status' => 'failed',
+                'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Failed,
                 'error' => $e->getMessage(),
             ]);
+                event(new TransactionFailed($model->fresh(), $e->getMessage() ?: 'submission_failed'));
         }
     }
 }

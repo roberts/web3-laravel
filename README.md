@@ -200,6 +200,48 @@ $gasHex = $svc->estimateGas($wallet, ['to' => $to, 'value' => $value, 'data' => 
 $fees = $svc->suggestFees($wallet); // ['priority' => '0x..', 'max' => '0x..']
 ```
 
+## Lifecycle events
+
+Hook into transaction progress throughout the pipeline by listening to these events:
+
+- `Roberts\\Web3Laravel\\Events\\TransactionPreparing`
+- `Roberts\\Web3Laravel\\Events\\TransactionPrepared`
+- `Roberts\\Web3Laravel\\Events\\TransactionSubmitted`
+- `Roberts\\Web3Laravel\\Events\\TransactionConfirmed`
+- `Roberts\\Web3Laravel\\Events\\TransactionFailed` (reason available via `$event->reason`)
+
+Example listener registration (EventServiceProvider):
+
+```php
+protected $listen = [
+	Roberts\\Web3Laravel\\Events\\TransactionSubmitted::class => [
+		App\\Listeners\\NotifyOnSubmission::class,
+	],
+	Roberts\\Web3Laravel\\Events\\TransactionFailed::class => [
+		App\\Listeners\\AlertOnFailure::class,
+	],
+];
+```
+
+Example minimal listener:
+
+```php
+namespace App\Listeners;
+
+use Roberts\Web3Laravel\Events\TransactionSubmitted;
+
+class NotifyOnSubmission
+{
+	public function handle(TransactionSubmitted $event): void
+	{
+		logger()->info('TX submitted', [
+			'id' => $event->transaction->id,
+			'hash' => $event->transaction->tx_hash,
+		]);
+	}
+}
+```
+
 ## Features - Core Functionality
 
 RPC & Provider Management: The package should allow for easy configuration of the blockchain's RPC endpoint (like Base). It should handle the instantiation of the Web3 class and its provider, making it available throughout the Laravel application via a Facade or service container.

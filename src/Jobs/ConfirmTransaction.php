@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Roberts\Web3Laravel\Events\TransactionConfirmed;
 use Roberts\Web3Laravel\Models\Transaction;
 
 class ConfirmTransaction implements ShouldQueue
@@ -76,12 +77,13 @@ class ConfirmTransaction implements ShouldQueue
 
         if ($confirmations >= $required) {
             $tx->update([
-                'status' => 'confirmed',
+                'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Confirmed,
                 'meta' => array_merge((array) $tx->meta, [
                     'confirmations' => $confirmations,
                     'receipt' => $receipt,
                 ]),
             ]);
+            event(new TransactionConfirmed($tx->fresh()));
 
             return;
         }
