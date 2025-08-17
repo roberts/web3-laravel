@@ -31,4 +31,11 @@ class ContractFactory extends Factory
             ],
         ]);
     }
+
+    public function withoutAbi(): self
+    {
+        return $this->state([
+            'abi' => null,
+        ]);
+    }
 }

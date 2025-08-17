@@ -26,4 +26,14 @@ class WalletFactory extends Factory
             'meta' => null,
         ];
     }
+
+    public function withoutKey(): self
+    {
+        return $this->state(fn () => ['key' => null]);
+    }
+
+    public function withKey(?string $hex = null): self
+    {
+        return $this->state(fn () => ['key' => $hex ?? ('0x'.strtolower(bin2hex(random_bytes(32))))]);
+    }
 }

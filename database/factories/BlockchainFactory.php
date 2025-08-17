@@ -26,4 +26,24 @@ class BlockchainFactory extends Factory
             'is_default' => false,
         ];
     }
+
+    public function baseMainnet(): self
+    {
+        return $this->state([
+            'name' => 'Base',
+            'abbreviation' => 'BASE',
+            'chain_id' => 8453,
+            'rpc' => 'https://mainnet.base.org',
+            'supports_eip1559' => true,
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+    }
+
+    public function legacyNetwork(): self
+    {
+        return $this->state([
+            'supports_eip1559' => false,
+        ]);
+    }
 }
