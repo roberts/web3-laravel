@@ -6,8 +6,8 @@ use Elliptic\EC;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
-use Web3\Utils as Web3Utils;
 use Web3\Providers\HttpProvider;
+use Web3\Utils as Web3Utils;
 use Web3\Web3;
 
 /**
@@ -149,8 +149,8 @@ class Web3Laravel
      */
     public function createWallet(?int $chainId = null, array $attributes = []): Wallet
     {
-    // Generate a random 32-byte private key hex (0x-prefixed)
-    $privHex = '0x'.strtolower(bin2hex(random_bytes(32)));
+        // Generate a random 32-byte private key hex (0x-prefixed)
+        $privHex = '0x'.strtolower(bin2hex(random_bytes(32)));
 
         // Derive public key and address
         $ec = new EC('secp256k1');
