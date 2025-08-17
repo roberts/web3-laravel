@@ -2,7 +2,11 @@
 
 namespace Roberts\Web3Laravel;
 
+use Elliptic\EC;
+use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Models\Blockchain;
+use Roberts\Web3Laravel\Models\Wallet;
+use Web3\Utils as Web3Utils;
 use Web3\Providers\HttpProvider;
 use Web3\Web3;
 
@@ -132,5 +136,51 @@ class Web3Laravel
         }
 
         return null;
+    }
+
+    /**
+     * Create and persist a new wallet:
+     * - Generates a new secp256k1 key pair (private key via web3.php utils/fallback; public via elliptic)
+     * - Derives the Ethereum address from the public key using keccak256 (web3.php Utils)
+     * - Encrypts the private key with Laravel's Crypt facade before storing
+     *
+     * @param  int|null  $chainId  Optional chain id to associate with the wallet (looked up in DB when enabled)
+     * @param  array  $attributes  Additional attributes to merge when creating the Wallet
+     */
+    public function createWallet(?int $chainId = null, array $attributes = []): Wallet
+    {
+    // Generate a random 32-byte private key hex (0x-prefixed)
+    $privHex = '0x'.strtolower(bin2hex(random_bytes(32)));
+
+        // Derive public key and address
+        $ec = new EC('secp256k1');
+        $kp = $ec->keyFromPrivate(Web3Utils::stripZero($privHex), 'hex');
+        $pub = $kp->getPublic(false, 'hex'); // 04 + x(64) + y(64)
+        $pubNoPrefix = substr($pub, 2);
+        $hash = Web3Utils::sha3('0x'.$pubNoPrefix);
+        $address = '0x'.substr(Web3Utils::stripZero($hash), -40);
+        $address = strtolower($address);
+
+        // Encrypt the private key before persisting
+        $encryptedKey = Crypt::encryptString($privHex);
+
+        // Associate blockchain when using DB
+        $useDb = (bool) ($this->config['use_database'] ?? false);
+        $blockchainId = null;
+        if ($useDb) {
+            $lookupId = $chainId ?? ($this->config['default_chain_id'] ?? null);
+            if ($lookupId !== null) {
+                $blockchainId = Blockchain::query()->where('chain_id', (int) $lookupId)->value('id');
+            }
+        }
+
+        $data = array_merge([
+            'address' => $address,
+            'key' => $encryptedKey, // Wallet mutator will keep as-is since already encrypted
+            'blockchain_id' => $blockchainId,
+            'is_active' => true,
+        ], $attributes);
+
+        return Wallet::create($data);
     }
 }

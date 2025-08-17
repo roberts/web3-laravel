@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Facade;
 /**
  * @method static \Web3\Web3 web3(?int $chainId = null, ?string $rpc = null)
  * @method static string resolveRpcUrl(?int $chainId = null)
+ * @method static \Roberts\Web3Laravel\Models\Wallet createWallet(?int $chainId = null, array $attributes = [])
  *
  * @see \Roberts\Web3Laravel\Web3Laravel
  */
