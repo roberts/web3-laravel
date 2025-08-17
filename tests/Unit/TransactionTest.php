@@ -9,7 +9,7 @@ it('casts status enum and provides helpers', function () {
 
     expect($tx->status)->toBeInstanceOf(TransactionStatus::class)
         ->and($tx->statusValue())->toBeString()
-        ->and(in_array($tx->statusValue(), array_map(fn($e) => $e->value, TransactionStatus::cases())))->toBeTrue();
+        ->and(in_array($tx->statusValue(), array_map(fn ($e) => $e->value, TransactionStatus::cases())))->toBeTrue();
 
     // helper methods
     expect(

@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Models\Wallet;
 
 it('encrypts and decrypts private key transparently', function () {

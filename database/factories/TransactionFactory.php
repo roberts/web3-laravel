@@ -51,11 +51,31 @@ class TransactionFactory extends Factory
     }
 
     // Status convenience states
-    public function pending(): self { return $this->state(fn () => ['status' => TransactionStatus::Pending]); }
-    public function preparing(): self { return $this->state(fn () => ['status' => TransactionStatus::Preparing]); }
-    public function prepared(): self { return $this->state(fn () => ['status' => TransactionStatus::Prepared]); }
-    public function submitted(): self { return $this->state(fn () => ['status' => TransactionStatus::Submitted]); }
-    public function confirmed(): self { return $this->state(fn () => ['status' => TransactionStatus::Confirmed]); }
+    public function pending(): self
+    {
+        return $this->state(fn () => ['status' => TransactionStatus::Pending]);
+    }
+
+    public function preparing(): self
+    {
+        return $this->state(fn () => ['status' => TransactionStatus::Preparing]);
+    }
+
+    public function prepared(): self
+    {
+        return $this->state(fn () => ['status' => TransactionStatus::Prepared]);
+    }
+
+    public function submitted(): self
+    {
+        return $this->state(fn () => ['status' => TransactionStatus::Submitted]);
+    }
+
+    public function confirmed(): self
+    {
+        return $this->state(fn () => ['status' => TransactionStatus::Confirmed]);
+    }
+
     public function failed(string $reason = 'failed'): self
     {
         return $this->state(fn () => [
@@ -65,6 +85,13 @@ class TransactionFactory extends Factory
     }
 
     // Handy field states
-    public function zeroValue(): self { return $this->state(fn () => ['value' => '0x0']); }
-    public function withData(string $hex = '0x'): self { return $this->state(fn () => ['data' => $hex]); }
+    public function zeroValue(): self
+    {
+        return $this->state(fn () => ['value' => '0x0']);
+    }
+
+    public function withData(string $hex = '0x'): self
+    {
+        return $this->state(fn () => ['data' => $hex]);
+    }
 }
