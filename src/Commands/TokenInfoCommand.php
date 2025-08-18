@@ -18,20 +18,21 @@ class TokenInfoCommand extends Command
 
         // Find token
         $token = Token::find($tokenId);
-        if (!$token) {
+        if (! $token) {
             $this->error("Token with ID {$tokenId} not found");
+
             return self::FAILURE;
         }
 
         try {
-            $this->info("Token Information");
-            $this->line("================");
+            $this->info('Token Information');
+            $this->line('================');
             $this->line("ID: {$token->id}");
             $this->line("Type: {$token->token_type->value}");
             $this->line("Contract: {$token->contract->address}");
             $this->line("Blockchain: {$token->contract->blockchain->name} (Chain ID: {$token->contract->blockchain->chain_id})");
             $this->line("Quantity: {$token->quantity}");
-            
+
             if ($token->token_id) {
                 $this->line("Token ID: {$token->token_id}");
             }
@@ -39,14 +40,14 @@ class TokenInfoCommand extends Command
             // Get metadata
             $this->line("\nFetching metadata...");
             $metadata = $tokenService->getTokenMetadata($token);
-            
-            if (!empty($metadata)) {
+
+            if (! empty($metadata)) {
                 $this->line("\nToken Metadata");
-                $this->line("==============");
-                
+                $this->line('==============');
+
                 foreach ($metadata as $key => $value) {
                     if ($value !== null && $value !== '') {
-                        $this->line(ucfirst($key) . ": {$value}");
+                        $this->line(ucfirst($key).": {$value}");
                     }
                 }
             } else {
@@ -56,6 +57,7 @@ class TokenInfoCommand extends Command
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("Failed to fetch token info: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }

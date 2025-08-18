@@ -56,6 +56,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->balanceOf($this, $address, $this->token_id);
     }
 
@@ -66,6 +67,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->transfer($this, $from, $to, $amount, $tokenId ?? $this->token_id);
     }
 
@@ -76,6 +78,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->approve($this, $owner, $spender, $amount);
     }
 
@@ -86,6 +89,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->allowance($this, $owner, $spender);
     }
 
@@ -96,6 +100,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->mint($this, $minter, $to, $amount, $tokenId, $data);
     }
 
@@ -106,6 +111,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->burn($this, $burner, $amount, $tokenId);
     }
 
@@ -116,6 +122,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->getTokenMetadata($this);
     }
 
@@ -126,6 +133,7 @@ class Token extends Model
     {
         /** @var TokenService $service */
         $service = app(TokenService::class);
+
         return $service->ownerOf($this, $tokenId);
     }
 
@@ -168,21 +176,21 @@ class Token extends Model
      */
     public function formatAmount(string $rawAmount): string
     {
-        if (!$this->isERC20() || !$this->decimals) {
+        if (! $this->isERC20() || ! $this->decimals) {
             return $rawAmount;
         }
 
         $decimals = $this->decimals;
         $length = strlen($rawAmount);
-        
+
         if ($length <= $decimals) {
-            return '0.' . str_pad($rawAmount, $decimals, '0', STR_PAD_LEFT);
+            return '0.'.str_pad($rawAmount, $decimals, '0', STR_PAD_LEFT);
         }
-        
+
         $wholePart = substr($rawAmount, 0, $length - $decimals);
         $decimalPart = substr($rawAmount, $length - $decimals);
-        
-        return $wholePart . '.' . rtrim($decimalPart, '0');
+
+        return $wholePart.'.'.rtrim($decimalPart, '0');
     }
 
     /**
@@ -190,17 +198,18 @@ class Token extends Model
      */
     public function parseAmount(string $formattedAmount): string
     {
-        if (!$this->isERC20() || !$this->decimals) {
+        if (! $this->isERC20() || ! $this->decimals) {
             return $formattedAmount;
         }
 
         if (str_contains($formattedAmount, '.')) {
             [$whole, $decimal] = explode('.', $formattedAmount, 2);
             $decimal = str_pad(substr($decimal, 0, $this->decimals), $this->decimals, '0');
-            return ltrim($whole . $decimal, '0') ?: '0';
+
+            return ltrim($whole.$decimal, '0') ?: '0';
         }
-        
-        return $formattedAmount . str_repeat('0', $this->decimals);
+
+        return $formattedAmount.str_repeat('0', $this->decimals);
     }
 
     // ========================================
@@ -214,12 +223,12 @@ class Token extends Model
     {
         try {
             $balance = $this->balanceOf($address);
-            
+
             if ($this->isERC721()) {
                 // For NFTs, check if they own the specific token
                 return $tokenId && $this->ownerOf($tokenId) === strtolower($address);
             }
-            
+
             return bccomp($balance, $amount, 0) >= 0;
         } catch (\Exception $e) {
             return false;
@@ -232,6 +241,7 @@ class Token extends Model
     public function transferFrom(string|Wallet $from, string $to, string $amount, ?string $tokenId = null): Transaction
     {
         $wallet = $from instanceof Wallet ? $from : $this->resolveWallet($from);
+
         return $this->transfer($wallet, $to, $amount, $tokenId);
     }
 
@@ -242,6 +252,7 @@ class Token extends Model
     {
         $wallet = $minter instanceof Wallet ? $minter : $this->resolveWallet($minter);
         $data = $uri ? ['uri' => $uri] : [];
+
         return $this->mint($wallet, $to, $amount, $tokenId, $data);
     }
 
@@ -251,6 +262,7 @@ class Token extends Model
     public function burnFrom(string|Wallet $burner, string $amount, ?string $tokenId = null): Transaction
     {
         $wallet = $burner instanceof Wallet ? $burner : $this->resolveWallet($burner);
+
         return $this->burn($wallet, $amount, $tokenId ?? $this->token_id);
     }
 
@@ -260,6 +272,7 @@ class Token extends Model
     public function approveSpender(string|Wallet $owner, string $spender, string $amount): Transaction
     {
         $wallet = $owner instanceof Wallet ? $owner : $this->resolveWallet($owner);
+
         return $this->approve($wallet, $spender, $amount);
     }
 
@@ -269,11 +282,11 @@ class Token extends Model
     public function getFormattedBalance(string $address, ?string $tokenId = null): string
     {
         $balance = $this->balanceOf($address);
-        
+
         if ($this->isERC20() && $this->decimals) {
             return $this->formatAmount($balance);
         }
-        
+
         return $balance;
     }
 
@@ -284,18 +297,18 @@ class Token extends Model
     {
         $balance = $this->balanceOf($address);
         $metadata = $this->getMetadata();
-        
+
         $info = [
             'raw_balance' => $balance,
             'formatted_balance' => $this->getFormattedBalance($address, $tokenId),
             'token_type' => $this->token_type->value,
             'contract_address' => $this->contract->address,
         ];
-        
-        if (!empty($metadata)) {
+
+        if (! empty($metadata)) {
             $info = array_merge($info, $metadata);
         }
-        
+
         if ($this->isERC721() && $tokenId) {
             try {
                 $info['owner'] = $this->ownerOf($tokenId);
@@ -305,7 +318,7 @@ class Token extends Model
                 $info['is_owner'] = false;
             }
         }
-        
+
         return $info;
     }
 
@@ -314,12 +327,13 @@ class Token extends Model
      */
     public function isApproved(string $owner, string $spender, string $amount = '1'): bool
     {
-        if (!$this->isERC20()) {
+        if (! $this->isERC20()) {
             return false; // Approval concept mainly applies to ERC-20
         }
-        
+
         try {
             $allowance = $this->allowance($owner, $spender);
+
             return bccomp($allowance, $amount, 0) >= 0;
         } catch (\Exception $e) {
             return false;
@@ -353,15 +367,15 @@ class Token extends Model
     {
         $wallet = $from instanceof Wallet ? $from : $this->resolveWallet($from);
         $transactions = [];
-        
+
         foreach ($recipients as $recipient) {
             $to = $recipient['to'];
             $amount = $recipient['amount'];
             $tokenId = $recipient['token_id'] ?? $this->token_id;
-            
+
             $transactions[] = $this->transfer($wallet, $to, $amount, $tokenId);
         }
-        
+
         return $transactions;
     }
 
@@ -372,16 +386,16 @@ class Token extends Model
     {
         $wallet = $minter instanceof Wallet ? $minter : $this->resolveWallet($minter);
         $transactions = [];
-        
+
         foreach ($recipients as $recipient) {
             $to = $recipient['to'];
             $amount = $recipient['amount'];
             $tokenId = $recipient['token_id'] ?? null;
             $data = $recipient['data'] ?? [];
-            
+
             $transactions[] = $this->mint($wallet, $to, $amount, $tokenId, $data);
         }
-        
+
         return $transactions;
     }
 
@@ -400,21 +414,21 @@ class Token extends Model
             ],
             'quantity' => $this->quantity,
         ];
-        
+
         if ($this->token_id) {
             $info['token_id'] = $this->token_id;
         }
-        
+
         // Add metadata
         try {
             $metadata = $this->getMetadata();
-            if (!empty($metadata)) {
+            if (! empty($metadata)) {
                 $info['metadata'] = $metadata;
             }
         } catch (\Exception $e) {
             $info['metadata'] = null;
         }
-        
+
         return $info;
     }
 
@@ -425,20 +439,20 @@ class Token extends Model
     {
         try {
             $metadata = $this->getMetadata();
-            
+
             if (isset($metadata['symbol'])) {
                 $this->symbol = $metadata['symbol'];
             }
-            
+
             if (isset($metadata['decimals'])) {
                 $this->decimals = (int) $metadata['decimals'];
             }
-            
+
             $this->save();
         } catch (\Exception $e) {
             // Silently fail - metadata might not be available
         }
-        
+
         return $this;
     }
 
@@ -449,6 +463,7 @@ class Token extends Model
     {
         $token = static::create($attributes);
         $token->refreshMetadata();
+
         return $token;
     }
 
@@ -458,11 +473,11 @@ class Token extends Model
     private function resolveWallet(string $address): Wallet
     {
         $wallet = Wallet::where('address', strtolower($address))->first();
-        
-        if (!$wallet) {
+
+        if (! $wallet) {
             throw new \InvalidArgumentException("Wallet not found for address: {$address}");
         }
-        
+
         return $wallet;
     }
 }

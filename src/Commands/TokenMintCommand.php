@@ -30,29 +30,32 @@ class TokenMintCommand extends Command
 
         // Find token
         $token = Token::find($tokenId);
-        if (!$token) {
+        if (! $token) {
             $this->error("Token with ID {$tokenId} not found");
+
             return self::FAILURE;
         }
 
         // Find wallet (minter)
-        $wallet = is_numeric($walletInput) 
+        $wallet = is_numeric($walletInput)
             ? Wallet::find($walletInput)
             : Wallet::where('address', strtolower($walletInput))->first();
-            
-        if (!$wallet) {
+
+        if (! $wallet) {
             $this->error("Wallet not found: {$walletInput}");
+
             return self::FAILURE;
         }
 
         // Validate addresses
-        if (!$this->isValidAddress($to)) {
+        if (! $this->isValidAddress($to)) {
             $this->error("Invalid recipient address: {$to}");
+
             return self::FAILURE;
         }
 
         try {
-            $this->info("Preparing mint transaction...");
+            $this->info('Preparing mint transaction...');
             $this->line("Token: {$token->contract->address} ({$token->token_type->value})");
             $this->line("Minter: {$wallet->address}");
             $this->line("To: {$to}");
@@ -64,21 +67,23 @@ class TokenMintCommand extends Command
                 $this->line("Token URI: {$uri}");
             }
 
-            if (!$this->confirm('Proceed with minting?')) {
+            if (! $this->confirm('Proceed with minting?')) {
                 $this->info('Minting cancelled');
+
                 return self::SUCCESS;
             }
 
             $data = $uri ? ['uri' => $uri] : [];
             $transaction = $tokenService->mint($token, $wallet, $to, $amount, $nftTokenId, $data);
-            
+
             $this->info("Mint transaction created with ID: {$transaction->id}");
             $this->line("Status: {$transaction->status->value}");
-            $this->line("The transaction will be processed asynchronously.");
-            
+            $this->line('The transaction will be processed asynchronously.');
+
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("Minting failed: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }

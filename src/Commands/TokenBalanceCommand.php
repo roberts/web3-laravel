@@ -25,19 +25,21 @@ class TokenBalanceCommand extends Command
 
         // Find token
         $token = Token::find($tokenId);
-        if (!$token) {
+        if (! $token) {
             $this->error("Token with ID {$tokenId} not found");
+
             return self::FAILURE;
         }
 
         // Validate address
-        if (!$this->isValidAddress($address)) {
+        if (! $this->isValidAddress($address)) {
             $this->error("Invalid address: {$address}");
+
             return self::FAILURE;
         }
 
         try {
-            $this->info("Checking token balance...");
+            $this->info('Checking token balance...');
             $this->line("Token: {$token->contract->address} ({$token->token_type->value})");
             $this->line("Address: {$address}");
             if ($nftTokenId) {
@@ -45,13 +47,13 @@ class TokenBalanceCommand extends Command
             }
 
             $balance = $tokenService->balanceOf($token, $address, $nftTokenId);
-            
+
             if ($format && $token->isERC20()) {
                 $metadata = $tokenService->getTokenMetadata($token);
                 $decimals = $metadata['decimals'] ?? 18;
                 $formattedBalance = $token->formatAmount($balance);
                 $symbol = $metadata['symbol'] ?? 'TOKEN';
-                
+
                 $this->info("Balance: {$formattedBalance} {$symbol}");
                 $this->line("Raw balance: {$balance}");
             } else {
@@ -63,15 +65,16 @@ class TokenBalanceCommand extends Command
                 try {
                     $owner = $tokenService->ownerOf($token, $nftTokenId);
                     $isOwner = strtolower($owner) === strtolower($address);
-                    $this->line("Owner: {$owner} " . ($isOwner ? '(matches queried address)' : ''));
+                    $this->line("Owner: {$owner} ".($isOwner ? '(matches queried address)' : ''));
                 } catch (\Exception $e) {
                     $this->line("Could not fetch owner info: {$e->getMessage()}");
                 }
             }
-            
+
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("Balance check failed: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }

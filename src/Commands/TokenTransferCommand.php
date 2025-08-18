@@ -28,29 +28,32 @@ class TokenTransferCommand extends Command
 
         // Find token
         $token = Token::find($tokenId);
-        if (!$token) {
+        if (! $token) {
             $this->error("Token with ID {$tokenId} not found");
+
             return self::FAILURE;
         }
 
         // Find wallet
-        $wallet = is_numeric($fromInput) 
+        $wallet = is_numeric($fromInput)
             ? Wallet::find($fromInput)
             : Wallet::where('address', strtolower($fromInput))->first();
-            
-        if (!$wallet) {
+
+        if (! $wallet) {
             $this->error("Wallet not found: {$fromInput}");
+
             return self::FAILURE;
         }
 
         // Validate addresses
-        if (!$this->isValidAddress($to)) {
+        if (! $this->isValidAddress($to)) {
             $this->error("Invalid recipient address: {$to}");
+
             return self::FAILURE;
         }
 
         try {
-            $this->info("Preparing transfer...");
+            $this->info('Preparing transfer...');
             $this->line("Token: {$token->contract->address} ({$token->token_type->value})");
             $this->line("From: {$wallet->address}");
             $this->line("To: {$to}");
@@ -59,20 +62,22 @@ class TokenTransferCommand extends Command
                 $this->line("Token ID: {$nftTokenId}");
             }
 
-            if (!$this->confirm('Proceed with transfer?')) {
+            if (! $this->confirm('Proceed with transfer?')) {
                 $this->info('Transfer cancelled');
+
                 return self::SUCCESS;
             }
 
             $transaction = $tokenService->transfer($token, $wallet, $to, $amount, $nftTokenId);
-            
+
             $this->info("Transfer transaction created with ID: {$transaction->id}");
             $this->line("Status: {$transaction->status->value}");
-            $this->line("The transaction will be processed asynchronously.");
-            
+            $this->line('The transaction will be processed asynchronously.');
+
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("Transfer failed: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }

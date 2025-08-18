@@ -6,8 +6,6 @@ use Roberts\Web3Laravel\Models\Contract;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Services\ContractCaller;
-use Web3\Utils as Web3Utils;
 
 /**
  * Token interaction service for ERC-20, ERC-721, and ERC-1155 operations.
@@ -27,7 +25,7 @@ class TokenService
     public function balanceOf(Token $token, string $address, ?string $tokenId = null): string
     {
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
@@ -35,7 +33,7 @@ class TokenService
             'erc20' => [$address],
             'erc721' => [$address],
             'erc1155' => [$address, $tokenId ?? $token->token_id ?? '0'],
-            default => throw new \InvalidArgumentException('Unsupported token type: ' . $token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
         };
 
         $result = $this->contractCaller->call(
@@ -55,7 +53,7 @@ class TokenService
     public function transfer(Token $token, Wallet $from, string $to, string $amount, ?string $tokenId = null): Transaction
     {
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
@@ -63,13 +61,13 @@ class TokenService
             'erc20' => ['transfer', [$to, $amount], '0x0'],
             'erc721' => ['safeTransferFrom', [$from->address, $to, $tokenId ?? $token->token_id ?? '0'], '0x0'],
             'erc1155' => ['safeTransferFrom', [
-                $from->address, 
-                $to, 
-                $tokenId ?? $token->token_id ?? '0', 
-                $amount, 
-                '0x'
+                $from->address,
+                $to,
+                $tokenId ?? $token->token_id ?? '0',
+                $amount,
+                '0x',
             ], '0x0'],
-            default => throw new \InvalidArgumentException('Unsupported token type: ' . $token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
         };
 
         $data = $this->encodeFunction($contract->abi, $functionName, $params);
@@ -100,14 +98,14 @@ class TokenService
     public function approve(Token $token, Wallet $owner, string $spender, string $amount): Transaction
     {
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
         [$functionName, $params] = match ($token->token_type->value) {
             'erc20' => ['approve', [$spender, $amount]],
             'erc721' => ['approve', [$spender, $amount]], // amount is tokenId for NFTs
-            default => throw new \InvalidArgumentException('Approve not supported for token type: ' . $token->token_type->value)
+            default => throw new \InvalidArgumentException('Approve not supported for token type: '.$token->token_type->value)
         };
 
         $data = $this->encodeFunction($contract->abi, $functionName, $params);
@@ -141,7 +139,7 @@ class TokenService
         }
 
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
@@ -162,20 +160,20 @@ class TokenService
     public function mint(Token $token, Wallet $minter, string $to, string $amount, ?string $tokenId = null, array $data = []): Transaction
     {
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
         // Try to determine the correct mint function based on ABI
         $mintFunction = $this->detectMintFunction($contract->abi, $token->token_type->value);
-        
+
         $params = match ($token->token_type->value) {
             'erc20' => [$to, $amount],
-            'erc721' => $mintFunction === 'safeMint' 
+            'erc721' => $mintFunction === 'safeMint'
                 ? [$to, $tokenId ?? $token->token_id ?? '0']
                 : [$to],
             'erc1155' => [$to, $tokenId ?? $token->token_id ?? '0', $amount, $data['data'] ?? '0x'],
-            default => throw new \InvalidArgumentException('Unsupported token type: ' . $token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
         };
 
         $encodedData = $this->encodeFunction($contract->abi, $mintFunction, $params);
@@ -206,17 +204,17 @@ class TokenService
     public function burn(Token $token, Wallet $burner, string $amount, ?string $tokenId = null): Transaction
     {
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
         $burnFunction = $this->detectBurnFunction($contract->abi, $token->token_type->value);
-        
+
         $params = match ($token->token_type->value) {
             'erc20' => [$amount],
             'erc721' => [$tokenId ?? $token->token_id ?? '0'],
             'erc1155' => [$burner->address, $tokenId ?? $token->token_id ?? '0', $amount],
-            default => throw new \InvalidArgumentException('Unsupported token type: ' . $token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
         };
 
         $data = $this->encodeFunction($contract->abi, $burnFunction, $params);
@@ -246,7 +244,7 @@ class TokenService
     public function getTokenMetadata(Token $token): array
     {
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
@@ -283,7 +281,7 @@ class TokenService
         }
 
         $contract = $token->contract;
-        if (!$contract || !$contract->abi) {
+        if (! $contract || ! $contract->abi) {
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
@@ -311,7 +309,7 @@ class TokenService
     protected function detectMintFunction(array $abi, string $tokenType): string
     {
         $possibleFunctions = ['mint', 'safeMint', 'mintTo'];
-        
+
         foreach ($abi as $item) {
             if (($item['type'] ?? '') === 'function' && in_array($item['name'] ?? '', $possibleFunctions)) {
                 return $item['name'];
@@ -331,7 +329,7 @@ class TokenService
     protected function detectBurnFunction(array $abi, string $tokenType): string
     {
         $possibleFunctions = ['burn', 'burnFrom'];
-        
+
         foreach ($abi as $item) {
             if (($item['type'] ?? '') === 'function' && in_array($item['name'] ?? '', $possibleFunctions)) {
                 return $item['name'];
