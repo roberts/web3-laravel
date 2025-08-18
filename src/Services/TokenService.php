@@ -29,11 +29,9 @@ class TokenService
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
-        $params = match ($token->token_type->value) {
+        $params = match ($token->getTokenType()) {
             'erc20' => [$address],
-            'erc721' => [$address],
-            'erc1155' => [$address, $tokenId ?? $token->token_id ?? '0'],
-            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->getTokenType())
         };
 
         $result = $this->contractCaller->call(
@@ -57,17 +55,9 @@ class TokenService
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
-        [$functionName, $params, $value] = match ($token->token_type->value) {
+        [$functionName, $params, $value] = match ($token->getTokenType()) {
             'erc20' => ['transfer', [$to, $amount], '0x0'],
-            'erc721' => ['safeTransferFrom', [$from->address, $to, $tokenId ?? $token->token_id ?? '0'], '0x0'],
-            'erc1155' => ['safeTransferFrom', [
-                $from->address,
-                $to,
-                $tokenId ?? $token->token_id ?? '0',
-                $amount,
-                '0x',
-            ], '0x0'],
-            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->getTokenType())
         };
 
         $data = $this->encodeFunction($contract->abi, $functionName, $params);
@@ -102,10 +92,9 @@ class TokenService
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
-        [$functionName, $params] = match ($token->token_type->value) {
+        [$functionName, $params] = match ($token->getTokenType()) {
             'erc20' => ['approve', [$spender, $amount]],
-            'erc721' => ['approve', [$spender, $amount]], // amount is tokenId for NFTs
-            default => throw new \InvalidArgumentException('Approve not supported for token type: '.$token->token_type->value)
+            default => throw new \InvalidArgumentException('Approve not supported for token type: '.$token->getTokenType())
         };
 
         $data = $this->encodeFunction($contract->abi, $functionName, $params);
@@ -134,7 +123,7 @@ class TokenService
      */
     public function allowance(Token $token, string $owner, string $spender): string
     {
-        if ($token->token_type->value !== 'erc20') {
+        if ($token->getTokenType() !== 'erc20') {
             throw new \InvalidArgumentException('Allowance only supported for ERC-20 tokens');
         }
 
@@ -165,15 +154,15 @@ class TokenService
         }
 
         // Try to determine the correct mint function based on ABI
-        $mintFunction = $this->detectMintFunction($contract->abi, $token->token_type->value);
+        $mintFunction = $this->detectMintFunction($contract->abi, $token->getTokenType());
 
-        $params = match ($token->token_type->value) {
+        $params = match ($token->getTokenType()) {
             'erc20' => [$to, $amount],
             'erc721' => $mintFunction === 'safeMint'
                 ? [$to, $tokenId ?? $token->token_id ?? '0']
                 : [$to],
             'erc1155' => [$to, $tokenId ?? $token->token_id ?? '0', $amount, $data['data'] ?? '0x'],
-            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->getTokenType())
         };
 
         $encodedData = $this->encodeFunction($contract->abi, $mintFunction, $params);
@@ -208,13 +197,13 @@ class TokenService
             throw new \InvalidArgumentException('Token contract must have ABI defined');
         }
 
-        $burnFunction = $this->detectBurnFunction($contract->abi, $token->token_type->value);
+        $burnFunction = $this->detectBurnFunction($contract->abi, $token->getTokenType());
 
-        $params = match ($token->token_type->value) {
+        $params = match ($token->getTokenType()) {
             'erc20' => [$amount],
             'erc721' => [$tokenId ?? $token->token_id ?? '0'],
             'erc1155' => [$burner->address, $tokenId ?? $token->token_id ?? '0', $amount],
-            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->token_type->value)
+            default => throw new \InvalidArgumentException('Unsupported token type: '.$token->getTokenType())
         };
 
         $data = $this->encodeFunction($contract->abi, $burnFunction, $params);
@@ -259,7 +248,7 @@ class TokenService
         }
 
         // ERC-20 specific
-        if ($token->token_type->value === 'erc20') {
+        if ($token->getTokenType() === 'erc20') {
             try {
                 $metadata['decimals'] = (int) ($this->contractCaller->call($contract->abi, $contract->address, 'decimals', [])[0] ?? 18);
                 $metadata['totalSupply'] = $this->contractCaller->call($contract->abi, $contract->address, 'totalSupply', [])[0] ?? '0';
@@ -276,7 +265,7 @@ class TokenService
      */
     public function ownerOf(Token $token, string $tokenId): string
     {
-        if ($token->token_type->value !== 'erc721') {
+        if ($token->getTokenType() !== 'erc721') {
             throw new \InvalidArgumentException('ownerOf only supported for ERC-721 tokens');
         }
 

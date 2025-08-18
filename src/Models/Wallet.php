@@ -3,6 +3,7 @@
 namespace Roberts\Web3Laravel\Models;
 
 use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 use Roberts\Web3Laravel\Enums\WalletType;
+use Roberts\Web3Laravel\Models\KeyRelease;
 
 /**
  * @property int $id
@@ -64,6 +66,23 @@ class Wallet extends Model
     public function keyReleases(): HasMany
     {
         return $this->hasMany(KeyRelease::class);
+    }
+
+    /**
+     * Get all NFTs owned by this wallet.
+     */
+    public function nfts(): HasMany
+    {
+        return $this->hasMany(WalletNft::class);
+    }
+
+    /**
+     * Get NFTs from a specific collection.
+     */
+    public function nftsFromCollection(NftCollection $collection): HasMany
+    {
+        return $this->hasMany(WalletNft::class)
+            ->where('nft_collection_id', $collection->id);
     }
 
     // Attribute mutator: always encrypt when setting
@@ -290,5 +309,69 @@ class Wallet extends Model
             ->first();
 
         return $lastRelease?->released_at;
+    }
+
+    // NFT Helper Methods
+
+    /**
+     * Get the total number of NFTs owned by this wallet.
+     */
+    public function getNftCount(): int
+    {
+        return $this->nfts()->count();
+    }
+
+    /**
+     * Get the number of unique NFT collections owned.
+     */
+    public function getUniqueCollectionCount(): int
+    {
+        return $this->nfts()
+            ->distinct('nft_collection_id')
+            ->count('nft_collection_id');
+    }
+
+    /**
+     * Get NFTs by collection.
+     */
+    public function getNftsByCollection(): Collection
+    {
+        return $this->nfts()
+            ->with('nftCollection')
+            ->get()
+            ->groupBy('nft_collection_id');
+    }
+
+    /**
+     * Check if this wallet owns a specific NFT.
+     */
+    public function ownsNft(NftCollection $collection, string $tokenId): bool
+    {
+        return $this->nfts()
+            ->where('nft_collection_id', $collection->id)
+            ->where('token_id', $tokenId)
+            ->exists();
+    }
+
+    /**
+     * Get estimated portfolio value (placeholder for future implementation).
+     */
+    public function getEstimatedPortfolioValue(): ?string
+    {
+        // This would calculate the total value of all tokens and NFTs
+        // Based on current market prices
+        return null;
+    }
+
+    /**
+     * Get NFT gallery for display purposes.
+     */
+    public function getNftGallery(int $limit = 20): Collection
+    {
+        return $this->nfts()
+            ->with('nftCollection')
+            ->orderBy('acquired_at', 'desc')
+            ->limit($limit)
+            ->get();
     }
 }

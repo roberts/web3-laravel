@@ -28,14 +28,13 @@ class TokenInfoCommand extends Command
             $this->info('Token Information');
             $this->line('================');
             $this->line("ID: {$token->id}");
-            $this->line("Type: {$token->token_type->value}");
+            $this->line("Type: {$token->getTokenType()}");
+            $this->line("Symbol: {$token->symbol}");
+            $this->line("Name: {$token->name}");
+            $this->line("Decimals: {$token->decimals}");
+            $this->line("Total Supply: {$token->total_supply}");
             $this->line("Contract: {$token->contract->address}");
             $this->line("Blockchain: {$token->contract->blockchain->name} (Chain ID: {$token->contract->blockchain->chain_id})");
-            $this->line("Quantity: {$token->quantity}");
-
-            if ($token->token_id) {
-                $this->line("Token ID: {$token->token_id}");
-            }
 
             // Get metadata
             $this->line("\nFetching metadata...");

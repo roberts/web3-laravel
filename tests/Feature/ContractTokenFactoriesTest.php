@@ -2,7 +2,10 @@
 
 use Roberts\Web3Laravel\Enums\TokenType;
 use Roberts\Web3Laravel\Models\Contract;
+use Roberts\Web3Laravel\Models\NftCollection;
 use Roberts\Web3Laravel\Models\Token;
+use Roberts\Web3Laravel\Models\Wallet;
+use Roberts\Web3Laravel\Models\WalletNft;
 
 it('creates a contract with optional abi', function () {
     $c1 = Contract::factory()->create();
@@ -14,20 +17,40 @@ it('creates a contract with optional abi', function () {
     expect($c2->abi)->toBeArray();
 });
 
-it('creates tokens of different types', function () {
-    $erc20 = Token::factory()->erc20('DEMO', 6)->create(['quantity' => '1000000']);
-    expect($erc20->token_type)->toBe(TokenType::ERC20);
-    expect($erc20->symbol)->toBe('DEMO');
-    expect($erc20->decimals)->toBe(6);
-    expect($erc20->token_id)->toBeNull();
+it('creates fungible tokens and nft collections', function () {
+    // Test ERC-20 fungible token
+    $erc20Token = Token::factory()->withSymbol('DEMO')->withDecimals(6)->create([
+        'total_supply' => '1000000000000', // 1M tokens with 6 decimals
+    ]);
+    expect($erc20Token->symbol)->toBe('DEMO');
+    expect($erc20Token->decimals)->toBe(6);
+    expect($erc20Token->hasCompleteMetadata())->toBeTrue();
 
-    $erc721 = Token::factory()->erc721('1')->create();
-    expect($erc721->token_type)->toBe(TokenType::ERC721);
-    expect($erc721->token_id)->toBe('1');
-    expect($erc721->symbol)->toBeNull();
+    // Test ERC-721 NFT Collection
+    $erc721Collection = NftCollection::factory()->erc721()->create([
+        'name' => 'Test NFT Collection',
+        'symbol' => 'TNC',
+    ]);
+    expect($erc721Collection->standard)->toBe(TokenType::ERC721);
+    expect($erc721Collection->name)->toBe('Test NFT Collection');
+    expect($erc721Collection->symbol)->toBe('TNC');
+    expect($erc721Collection->supportsSemiFungible())->toBeFalse();
 
-    $erc1155 = Token::factory()->erc1155('10', '250')->create();
-    expect($erc1155->token_type)->toBe(TokenType::ERC1155);
-    expect($erc1155->token_id)->toBe('10');
-    expect($erc1155->quantity)->toBe('250');
+    // Test ERC-1155 NFT Collection  
+    $erc1155Collection = NftCollection::factory()->erc1155()->create([
+        'name' => 'Multi Token Collection',
+    ]);
+    expect($erc1155Collection->standard)->toBe(TokenType::ERC1155);
+    expect($erc1155Collection->supportsSemiFungible())->toBeTrue();
+    
+    // Test NFT ownership
+    $wallet = Wallet::factory()->create();
+    $nft = WalletNft::factory()->state([
+        'wallet_id' => $wallet->id,
+        'nft_collection_id' => $erc721Collection->id,
+        'token_id' => '1',
+        'quantity' => '1',
+    ])->create();
+    expect($nft->token_id)->toBe('1');
+    expect($nft->quantity)->toBe('1');
 });

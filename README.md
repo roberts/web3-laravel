@@ -267,212 +267,332 @@ class NotifyOnSubmission
 }
 ```
 
-## Token Operations: Eloquent model & service integration
+## Token & NFT Management: Clean Architecture with Separated Concerns
 
-The package provides a comprehensive `Token` Eloquent model that wraps ERC-20, ERC-721, and ERC-1155 token interactions with clean Laravel syntax. All token operations integrate with the async transaction pipeline.
+This package provides a comprehensive token and NFT management system with clean separation between fungible tokens (ERC-20) and non-fungible tokens (ERC-721/ERC-1155). The architecture is designed for scalability, analytics, and deployment platform integration.
 
-### Token Model Overview
+### Core Architecture
+
+- **Tokens**: Dedicated to ERC-20 fungible tokens with metadata support for deployed tokens
+- **NFT Collections**: Manages NFT collection metadata and analytics
+- **Wallet NFTs**: Direct ownership tracking with comprehensive metadata and rarity systems
 
 ```php
 use Roberts\Web3Laravel\Models\Token;
+use Roberts\Web3Laravel\Models\NftCollection;
+use Roberts\Web3Laravel\Models\WalletNft;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Enums\TokenType;
-
-// Find tokens by type
-$erc20Tokens = Token::ofType(TokenType::ERC20)->get();
-$nfts = Token::ofType(TokenType::ERC721)->get();
-
-// Get token information
-$token = Token::find(1);
-$info = $token->getInfo(); // Complete token details with metadata
-$metadata = $token->getMetadata(); // Contract metadata (name, symbol, decimals)
 ```
 
-### Balance Operations
+### Fungible Tokens (ERC-20)
+
+#### Token Creation & Management
 
 ```php
-// Basic balance check
-$balance = $token->balanceOf('0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7');
-
-// Formatted balance for display (ERC-20 with decimals)
-$formatted = $token->getFormattedBalance('0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7');
-// Returns: "1,500.50 USDC" instead of raw "1500500000"
-
-// Rich balance information with metadata
-$balanceInfo = $token->getBalanceInfo('0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7');
-/*
-Returns:
-[
-    'raw_balance' => '1500500000',
-    'formatted_balance' => '1,500.50',
-    'token_type' => 'ERC20',
-    'contract_address' => '0x...',
-    'name' => 'USD Coin',
+// Create a fungible token
+$token = Token::create([
+    'contract_id' => $contract->id,
     'symbol' => 'USDC',
-    'decimals' => 6
+    'name' => 'USD Coin',
+    'decimals' => 6,
+    'total_supply' => '1000000000000', // 1M USDC with 6 decimals
+    'metadata' => [
+        'icon_url' => 'https://example.com/usdc-icon.png',
+        'description' => 'A stablecoin pegged to USD',
+        'website' => 'https://centre.io/usdc',
+        'social' => [
+            'twitter' => '@centre_io',
+            'telegram' => 't.me/centre_io',
+        ],
+        'deployer_metadata' => [
+            'launch_date' => now(),
+            'initial_liquidity' => '50 ETH',
+            'platform' => 'Web3Laravel Deployer',
+        ],
+    ],
+]);
+
+// Token information and helpers
+echo $token->getDisplayName();     // "USD Coin (USDC)"
+echo $token->getFormattedSupply(); // "1,000,000 USDC"
+echo $token->getIconUrl();         // From metadata
+echo $token->getDescription();     // From metadata
+echo $token->getWebsite();         // From metadata
+
+// Check if token was deployed through your platform
+if ($token->isDeployedToken()) {
+    $deployerInfo = $token->getDeployerMetadata();
+    echo $deployerInfo['platform']; // "Web3Laravel Deployer"
+}
+```
+
+#### Token Operations
+
+```php
+// Balance operations with decimal handling
+$balance = $token->getBalance('0x742d35Cc...'); // Raw balance string
+$walletBalance = $token->getWalletBalance($wallet);
+
+// Format amounts with proper decimals
+$rawAmount = '1500000'; // 1.5 USDC with 6 decimals
+$formatted = $token->formatAmount($rawAmount); // "1.5"
+$parsed = $token->parseAmount('1.5'); // "1500000"
+
+// Market data (when available)
+$price = $token->getCurrentPrice();
+$marketCap = $token->getMarketCap();
+
+// Token holders and analytics
+$holders = $token->getHolders();
+$circulatingSupply = $token->getTotalCirculatingSupply();
+```
+
+### NFT Collections (ERC-721 & ERC-1155)
+
+#### Collection Creation & Management
+
+```php
+// Create an NFT collection
+$collection = NftCollection::create([
+    'contract_id' => $contract->id,
+    'name' => 'Bored Ape Yacht Club',
+    'symbol' => 'BAYC',
+    'description' => 'A collection of 10,000 unique Bored Ape NFTs',
+    'image_url' => 'https://example.com/bayc-logo.png',
+    'banner_url' => 'https://example.com/bayc-banner.png',
+    'external_url' => 'https://boredapeyachtclub.com',
+    'standard' => TokenType::ERC721,
+    'total_supply' => '10000',
+    'floor_price' => '50000000000000000000', // 50 ETH in wei
+    'metadata' => [
+        'creator' => 'Yuga Labs',
+        'royalty_fee' => '2.5%',
+        'launch_date' => '2021-04-23',
+    ],
+]);
+
+// Collection analytics and information
+echo $collection->getOwnerCount();           // Number of unique owners
+echo $collection->getUniqueTokenCount();     // Number of minted tokens
+echo $collection->getFloorPriceFormatted(); // "50.0 ETH"
+
+// Check collection capabilities
+if ($collection->supportsSemiFungible()) {
+    // ERC-1155 collection supports quantities
+}
+
+// Get collection statistics
+$stats = $collection->getCollectionStats();
+/*
+[
+    'total_supply' => '10000',
+    'unique_owners' => 5234,
+    'floor_price' => '50000000000000000000',
+    'volume_24h' => '1250000000000000000000',
+    'transfers_24h' => 45
+]
+*/
+```
+
+#### Trait & Rarity Management
+
+```php
+// Analyze trait distribution across collection
+$traitDistribution = $collection->getTraitDistribution();
+/*
+[
+    'Background' => [
+        'Blue' => ['count' => 1250, 'percentage' => 12.5],
+        'Red' => ['count' => 890, 'percentage' => 8.9],
+        // ...
+    ],
+    'Eyes' => [
+        'Laser' => ['count' => 45, 'percentage' => 0.45],
+        // ...
+    ]
 ]
 */
 
-// Check sufficient balance before transfer
-if ($token->hasSufficientBalance('0x...', '1000')) {
-    // Proceed with transfer
+// Get rarity rankings
+$rarityRankings = $collection->getRarityRanking(10); // Top 10 rarest
+```
+
+### NFT Ownership & Wallet Management
+
+#### Direct NFT Ownership
+
+```php
+// Create NFT ownership record
+$walletNft = WalletNft::create([
+    'wallet_id' => $wallet->id,
+    'nft_collection_id' => $collection->id,
+    'token_id' => '1234',
+    'quantity' => '1', // Always 1 for ERC-721, can be >1 for ERC-1155
+    'metadata_uri' => 'ipfs://QmHash/metadata.json',
+    'metadata' => [
+        'name' => 'Bored Ape #1234',
+        'description' => 'A unique Bored Ape with rare traits',
+        'image' => 'ipfs://QmHash/image.png',
+        'attributes' => [
+            ['trait_type' => 'Background', 'value' => 'Blue'],
+            ['trait_type' => 'Eyes', 'value' => 'Laser'],
+            ['trait_type' => 'Mouth', 'value' => 'Bored'],
+        ],
+    ],
+    'traits' => [
+        'Background' => 'Blue',
+        'Eyes' => 'Laser',
+        'Mouth' => 'Bored',
+    ],
+    'rarity_rank' => 45, // Based on trait rarity
+    'acquired_at' => now(),
+]);
+
+// NFT information and display
+echo $walletNft->getDisplayName();    // "Bored Ape #1234"
+echo $walletNft->getName();           // From metadata or auto-generated
+echo $walletNft->getCollectionName(); // "Bored Ape Yacht Club"
+
+// Semi-fungible token support (ERC-1155)
+if ($walletNft->isSemiFungible()) {
+    echo $walletNft->canTransferQuantity('5'); // Check if can transfer 5 units
+}
+
+// Metadata and rarity
+$metadata = $walletNft->getMetadata();
+$traits = $walletNft->getTraits();
+$rarityScore = $walletNft->getRarityScore();
+
+// Check if metadata needs refresh
+if ($walletNft->needsMetadataRefresh()) {
+    $walletNft->refreshMetadata();
 }
 ```
 
-### Transfer Operations
+#### Wallet NFT Portfolio Management
 
 ```php
-$wallet = Wallet::first();
+// Get wallet's complete NFT portfolio
+$wallet = Wallet::find(1);
 
-// Basic transfer (creates async Transaction)
-$transaction = $token->transfer($wallet, '0xRecipient...', '1000');
+// Basic NFT relationships
+$nfts = $wallet->nfts()->get();                    // All owned NFTs
+$collections = $wallet->nftCollections()->get();   // All collections owned
+$recentNfts = $wallet->recentNfts(10)->get();     // Recently acquired
 
-// Fluent transfer with automatic wallet resolution
-$transaction = $token->transferFrom('0xSender...', '0xRecipient...', '1000');
-$transaction = $token->transferFrom($wallet, '0xRecipient...', '1000');
+// Portfolio analytics
+echo $wallet->getNftCount();                // Total NFT count
+echo $wallet->getUniqueCollectionCount();   // Number of different collections
 
-// Batch transfer to multiple recipients
-$transactions = $token->batchTransfer($wallet, [
-    ['to' => '0xAlice...', 'amount' => '100'],
-    ['to' => '0xBob...', 'amount' => '200'],
-    ['to' => '0xCharlie...', 'amount' => '300'],
-]);
-```
-
-### Minting Operations
-
-```php
-// Basic minting
-$transaction = $token->mint($wallet, '0xRecipient...', '1000');
-
-// Fluent minting with automatic wallet resolution
-$transaction = $token->mintTo('0xRecipient...', '1000', $minterWallet);
-$transaction = $token->mintTo('0xRecipient...', '1000', '0xMinterAddress...');
-
-// NFT minting with metadata
-$transaction = $token->mintTo(
-    '0xRecipient...', 
-    '1', 
-    $minterWallet, 
-    '123', // token_id
-    'ipfs://QmYourMetadataHash' // uri
-);
-
-// Batch minting
-$transactions = $token->batchMint($minterWallet, [
-    ['to' => '0xUser1...', 'amount' => '1', 'token_id' => '101'],
-    ['to' => '0xUser2...', 'amount' => '1', 'token_id' => '102'],
-]);
-```
-
-### Approval Operations (ERC-20)
-
-```php
-// Approve spender
-$transaction = $token->approve($ownerWallet, '0xSpender...', '1000');
-
-// Fluent approval
-$transaction = $token->approveSpender($ownerWallet, '0xSpender...', '1000');
-$transaction = $token->approveSpender('0xOwner...', '0xSpender...', '1000');
-
-// Check current allowance
-$allowance = $token->allowance('0xOwner...', '0xSpender...');
-
-// Check if approved for specific amount
-if ($token->isApproved('0xOwner...', '0xSpender...', '1000')) {
-    // Spender can transfer up to 1000 tokens
+// Check specific ownership
+if ($wallet->ownsNft($collection, '1234')) {
+    echo "Wallet owns token #1234 from this collection";
 }
+
+// Get NFT gallery for display
+$gallery = $wallet->getNftGallery();
+/*
+Collection of NFTs with metadata optimized for gallery display:
+[
+    'id' => 1,
+    'collection_name' => 'Bored Ape Yacht Club',
+    'token_id' => '1234',
+    'name' => 'Bored Ape #1234',
+    'image' => 'ipfs://...',
+    'rarity_rank' => 45,
+    // ...
+]
+*/
+
+// Get NFTs by collection
+$baycNfts = $wallet->getNftsByCollection($collection);
 ```
 
-### NFT-Specific Operations
+### Token Type Enumeration & Standards
 
 ```php
-// Check NFT ownership (ERC-721)
-$owner = $token->ownerOf('123'); // token_id
+use Roberts\Web3Laravel\Enums\TokenType;
 
-// Check ownership in balance info
-$info = $token->getBalanceInfo('0x...', '123');
-echo $info['is_owner']; // true/false
+// Unified token type enum for all standards
+$tokenTypes = [
+    TokenType::ERC20,   // Fungible tokens
+    TokenType::ERC721,  // Non-fungible tokens
+    TokenType::ERC1155, // Multi-token (semi-fungible)
+];
+
+// Type checking and capabilities
+echo TokenType::ERC20->getDisplayName();      // "ERC-20 (Fungible Token)"
+echo TokenType::ERC721->isNft();              // true
+echo TokenType::ERC1155->isSemiFungible();    // true
+echo TokenType::ERC1155->supportsQuantity();  // true
+
+// Use in models
+$collection = NftCollection::where('standard', TokenType::ERC721)->first();
+$multiTokens = NftCollection::where('standard', TokenType::ERC1155)->get();
 ```
 
-### Transaction Tracking
+### Service Integration & Blockchain Operations
+
+All token and NFT operations integrate seamlessly with the existing transaction pipeline and services:
 
 ```php
-// Get all transactions for this token
-$allTxs = $token->transactions()->get();
+use Roberts\Web3Laravel\Services\TokenService;
 
-// Get pending transactions
-$pending = $token->pendingTransactions()->get();
+$tokenService = app(TokenService::class);
 
-// Get recent transactions
-$recent = $token->recentTransactions(10)->get();
+// Token operations (ERC-20 only now)
+$balance = $tokenService->balanceOf($token, $wallet->address);
+$transaction = $tokenService->transfer($token, $fromWallet, $toAddress, $amount);
+$transaction = $tokenService->mint($token, $minterWallet, $toAddress, $amount);
 
-// Track a specific operation
-$transaction = $token->transferFrom($wallet, '0x...', '1000');
-echo $transaction->status; // 'pending', 'submitted', 'confirmed', 'failed'
+// All operations return Transaction models for async processing
+echo $transaction->status; // 'pending' -> 'submitted' -> 'confirmed'
 ```
 
-### Metadata Management
+### Factory Support for Testing
+
+Comprehensive factory support for all models with realistic data generation:
 
 ```php
-// Refresh metadata from blockchain
-$token->refreshMetadata();
+// Create test tokens with proper metadata
+$token = Token::factory()
+    ->withSymbol('TEST')
+    ->withDeployerMetadata()
+    ->create();
 
-// Create token with metadata populated
-$token = Token::createWithMetadata([
-    'contract_id' => $contract->id,
-    'token_type' => TokenType::ERC20,
-    'quantity' => '1000000000000000000000', // 1000 tokens with 18 decimals
-]);
+// Create NFT collections with analytics
+$collection = NftCollection::factory()
+    ->erc721()
+    ->withFloorPrice('50000000000000000000') // 50 ETH
+    ->create();
 
-// Format amounts based on decimals
-$raw = '1000000000000000000'; // 1 token with 18 decimals
-$formatted = $token->formatAmount($raw); // "1.0"
-
-$formatted = '1.5';
-$raw = $token->parseAmount($formatted); // "1500000000000000000"
+// Create NFT ownership with specific traits
+$walletNft = WalletNft::factory()
+    ->for($wallet)
+    ->for($collection)
+    ->withTokenId('1234')
+    ->rare() // High rarity traits
+    ->create();
 ```
 
 ### Artisan Commands
 
-The package includes convenient Artisan commands for token operations:
+Convenient CLI commands for token and NFT operations:
 
 ```bash
-# Check token balance
-php artisan web3:token:balance 1 0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7 --format
-
-# Transfer tokens
-php artisan web3:token:transfer 1 0xSender... 0xRecipient... 1000
-
-# Mint tokens
-php artisan web3:token:mint 1 0xMinter... 0xRecipient... 1000 --token-id=123
-
-# Get token information
+# Token operations
+php artisan web3:token:balance 1 0x742d35Cc... --format
 php artisan web3:token:info 1
+php artisan web3:token:transfer 1 wallet_id 0xRecipient... 1000
+
+# NFT operations  
+php artisan web3:nft:info collection_id token_id
+php artisan web3:nft:transfer wallet_id collection_id token_id 0xRecipient...
+php artisan web3:nft:refresh-metadata collection_id token_id
 ```
 
-### Type Safety & Validation
-
-```php
-// Type checking methods
-if ($token->isERC20()) {
-    $decimals = $token->decimals;
-    $symbol = $token->symbol;
-}
-
-if ($token->isERC721()) {
-    $owner = $token->ownerOf($tokenId);
-}
-
-if ($token->isERC1155()) {
-    // Handle multi-token operations
-}
-
-// All operations validate addresses and amounts
-// Throws exceptions for invalid inputs
-```
-
-All token operations create `Transaction` models that are processed asynchronously through the same pipeline as regular transactions, with full lifecycle event support and confirmation tracking.
+This architecture provides clean separation of concerns, comprehensive analytics capabilities, and seamless integration with deployment platforms while maintaining full compatibility with existing Laravel patterns and the async transaction system.
 
 ## Features - Core Functionality
 

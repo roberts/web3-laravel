@@ -11,14 +11,24 @@ return new class extends Migration
         Schema::create('tokens', function (Blueprint $table) {
             $table->id();
             $table->foreignId('contract_id')->constrained('contracts')->cascadeOnDelete();
-            $table->string('token_type'); // erc20|erc721|erc1155
-            $table->decimal('quantity', 78, 0)->default(0); // big integer as string
-            // Optional fields for token identity:
-            $table->string('token_id')->nullable(); // for NFTs (721/1155)
-            $table->string('symbol', 32)->nullable(); // for ERC-20
-            $table->unsignedTinyInteger('decimals')->nullable(); // for ERC-20
+            $table->string('symbol', 32); // Token symbol (e.g., 'ETH', 'USDC')
+            $table->string('name'); // Token name (e.g., 'Ethereum', 'USD Coin')
+            $table->unsignedTinyInteger('decimals'); // Number of decimal places
+            $table->decimal('total_supply', 78, 0)->nullable(); // Total token supply
+            
+            // Token metadata for deployed tokens
+            $table->json('metadata')->nullable(); // Icon, description, social links, etc.
+            
+            // Market data (optional)
+            $table->decimal('price_usd', 20, 8)->nullable();
+            $table->decimal('market_cap_usd', 20, 2)->nullable();
+            $table->decimal('volume_24h_usd', 20, 2)->nullable();
+            $table->decimal('percent_change_24h', 5, 2)->nullable();
+            $table->timestamp('price_updated_at')->nullable();
+            
             $table->timestamps();
-            $table->index(['contract_id', 'token_id']);
+            $table->unique(['contract_id']); // One token per contract
+            $table->index('symbol');
         });
     }
 

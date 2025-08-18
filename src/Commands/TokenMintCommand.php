@@ -56,7 +56,7 @@ class TokenMintCommand extends Command
 
         try {
             $this->info('Preparing mint transaction...');
-            $this->line("Token: {$token->contract->address} ({$token->token_type->value})");
+            $this->line("Token: {$token->contract->address} ({$token->getTokenType()})");
             $this->line("Minter: {$wallet->address}");
             $this->line("To: {$to}");
             $this->line("Amount: {$amount}");

@@ -24,52 +24,46 @@ class TokenFactory extends Factory
             'name' => $name,
             'decimals' => 18,
             'total_supply' => (string) $this->faker->numberBetween(1000000, 1000000000) . str_repeat('0', 18),
+            'icon_url' => $this->faker->imageUrl(64, 64),
             'metadata' => [
-                'icon_url' => $this->faker->imageUrl(64, 64),
-                'description' => $this->faker->sentence(),
                 'website' => $this->faker->url(),
+                'description' => $this->faker->sentence(),
                 'social' => [
                     'twitter' => '@' . $this->faker->userName(),
                     'telegram' => 't.me/' . $this->faker->userName(),
-                    'discord' => 'discord.gg/' . $this->faker->lexify('???????'),
-                ],
-                'deployer_metadata' => [
-                    'launch_date' => $this->faker->dateTimeThisYear(),
-                    'initial_liquidity' => $this->faker->numberBetween(1, 100) . ' ETH',
-                    'platform' => 'Web3Laravel Deployer',
                 ],
             ],
         ];
     }
 
-    public function withSymbol(string $symbol): static
+    public function erc20(string $symbol = 'TKN', int $decimals = 18): self
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state([
+            'token_type' => TokenType::ERC20,
             'symbol' => $symbol,
-        ]);
-    }
-
-    public function withDecimals(int $decimals): static
-    {
-        return $this->state(fn (array $attributes) => [
             'decimals' => $decimals,
+            'token_id' => null,
         ]);
     }
 
-    public function withSupply(string $supply): static
+    public function erc721(?string $tokenId = null): self
     {
-        return $this->state(fn (array $attributes) => [
-            'total_supply' => $supply,
+        return $this->state([
+            'token_type' => TokenType::ERC721,
+            'token_id' => $tokenId ?? (string) random_int(1, PHP_INT_MAX),
+            'symbol' => null,
+            'decimals' => null,
         ]);
     }
 
-    public function stablecoin(): static
+    public function erc1155(?string $tokenId = null, string $quantity = '0'): self
     {
-        return $this->state(fn (array $attributes) => [
-            'symbol' => 'USDC',
-            'name' => 'USD Coin',
-            'decimals' => 6,
-            'total_supply' => '50000000000000', // 50B USDC with 6 decimals
+        return $this->state([
+            'token_type' => TokenType::ERC1155,
+            'token_id' => $tokenId ?? (string) random_int(1, PHP_INT_MAX),
+            'quantity' => $quantity,
+            'symbol' => null,
+            'decimals' => null,
         ]);
     }
 }

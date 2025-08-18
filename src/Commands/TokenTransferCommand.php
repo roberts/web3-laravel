@@ -54,7 +54,7 @@ class TokenTransferCommand extends Command
 
         try {
             $this->info('Preparing transfer...');
-            $this->line("Token: {$token->contract->address} ({$token->token_type->value})");
+            $this->line("Token: {$token->contract->address} ({$token->getTokenType()})");
             $this->line("From: {$wallet->address}");
             $this->line("To: {$to}");
             $this->line("Amount: {$amount}");

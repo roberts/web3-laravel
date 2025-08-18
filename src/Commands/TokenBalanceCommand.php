@@ -40,7 +40,7 @@ class TokenBalanceCommand extends Command
 
         try {
             $this->info('Checking token balance...');
-            $this->line("Token: {$token->contract->address} ({$token->token_type->value})");
+            $this->line("Token: {$token->contract->address} ({$token->getTokenType()})");
             $this->line("Address: {$address}");
             if ($nftTokenId) {
                 $this->line("Token ID: {$nftTokenId}");
