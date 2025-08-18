@@ -60,10 +60,9 @@ use Roberts\Web3Laravel\Facades\Web3Laravel as Web3M;
 
 // Resolve a Web3 client for default chain (config or DB):
 $web3 = Web3M::web3();
-$web3->clientVersion(function ($err, $version) {
-	if ($err) { throw $err; }
-	dump($version);
-});
+
+// Synchronous client version helper (wraps callback-style API):
+$version = Web3M::clientVersionString();
 
 // Resolve for a specific chain id:
 $web3 = Web3M::web3(8453); // Base mainnet
@@ -102,6 +101,32 @@ $txHash = $wallet->send([
 // Contract read-only call using stored ABI on the model
 $contract = Contract::first();
 $result = $contract->call('balanceOf', [$wallet->address]);
+```
+
+### Wallet ownership (User model)
+
+Wallets are owned by your application’s User model via a nullable `owner_id` foreign key.
+
+```php
+use App\Models\User;
+use Roberts\Web3Laravel\Models\Wallet;
+
+$user = User::first();
+
+// Create a wallet and associate to a user
+$wallet = Wallet::create([
+	'address' => '0x...',
+	'key' => '0x...', // will be encrypted by the model mutator
+	'owner_id' => $user->id,
+]);
+
+// Or via the service (recommended): generates keys and sets owner automatically
+$wallet = app(Roberts\Web3Laravel\Services\WalletService::class)
+	->create([], $user);
+
+// Access the owner and query by owner
+$owner = $wallet->user; // belongsTo the configured auth user model
+$wallets = Wallet::forUser($user)->get();
 ```
 
 You can also use the built-in ping command to verify connectivity:

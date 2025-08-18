@@ -18,7 +18,6 @@ class WalletFactory extends Factory
         return [
             'address' => '0x'.strtolower(bin2hex(random_bytes(20))),
             'key' => '0x'.strtolower(bin2hex(random_bytes(32))), // will be encrypted by mutator
-            'owner_type' => null,
             'owner_id' => null,
             'blockchain_id' => Blockchain::factory(),
             'is_active' => true,

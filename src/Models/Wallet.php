@@ -6,7 +6,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\BelongsTo as EloquentBelongsTo;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 
@@ -15,12 +15,12 @@ use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
  * @property string $address
  * @property string|null $key
  * @property int|null $blockchain_id
- * @property string|null $owner_type
  * @property int|null $owner_id
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $last_used_at
  * @property array|null $meta
  * @property-read Blockchain|null $blockchain
+ * @property-read \Illuminate\Foundation\Auth\User|null $user
  */
 class Wallet extends Model
 {
@@ -40,9 +40,11 @@ class Wallet extends Model
     ];
 
     // Relationships
-    public function owner(): MorphTo
+    public function user(): EloquentBelongsTo
     {
-        return $this->morphTo();
+        $userModel = config('auth.providers.users.model');
+        /** @var class-string<\Illuminate\Database\Eloquent\Model> $userModel */
+        return $this->belongsTo($userModel, 'owner_id');
     }
 
     public function blockchain(): BelongsTo
@@ -106,9 +108,8 @@ class Wallet extends Model
         return $query->where('address', strtolower($address));
     }
 
-    public function scopeForOwner($query, Model $owner)
+    public function scopeForUser($query, Model $user)
     {
-        return $query->where('owner_type', $owner->getMorphClass())
-            ->where('owner_id', $owner->getKey());
+        return $query->where('owner_id', $user->getKey());
     }
 }

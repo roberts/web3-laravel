@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('address')->unique();
             $table->text('key')->nullable(); // encrypted private key (Crypt)
-            $table->nullableMorphs('owner'); // owner_type + owner_id polymorphic (nullable)
+            $table->foreignId('owner_id')->nullable()->constrained('users'); // fixed owner to users table
             $table->foreignId('blockchain_id')->nullable()->constrained('blockchains');
             $table->boolean('is_active')->default(true);
             $table->timestamp('last_used_at')->nullable();

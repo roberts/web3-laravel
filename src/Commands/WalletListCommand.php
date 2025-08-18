@@ -7,18 +7,17 @@ use Roberts\Web3Laravel\Models\Wallet;
 
 class WalletListCommand extends Command
 {
-    public $signature = 'web3:wallet:list {--ownerType=} {--ownerId=}';
+    public $signature = 'web3:wallet:list {--ownerId=}';
 
     public $description = 'List wallets with optional owner filter.';
 
     public function handle(): int
     {
-        $ownerType = $this->option('ownerType');
-        $ownerId = $this->option('ownerId');
+    $ownerId = $this->option('ownerId');
 
         $query = Wallet::query();
-        if ($ownerType && $ownerId) {
-            $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
+        if ($ownerId) {
+            $query->where('owner_id', $ownerId);
         }
 
     /** @var \Illuminate\Support\Collection<int,Wallet> $collection */
@@ -28,14 +27,14 @@ class WalletListCommand extends Command
                 'id' => $w->id,
                 'address' => $w->address,
                 'blockchain_id' => $w->blockchain_id,
-                'owner' => $w->owner_type ? ($w->owner_type.'#'.$w->owner_id) : '-',
+                'owner_id' => $w->owner_id ?? '-',
                 'active' => $w->is_active ? 'yes' : 'no',
                 'last_used_at' => optional($w->last_used_at)->toDateTimeString(),
                 'key_preview' => (string) ($w->maskedKey() ?? ''),
             ];
         })->all();
 
-        $this->table(['ID', 'Address', 'Chain', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
+    $this->table(['ID', 'Address', 'Chain', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
 
         return self::SUCCESS;
     }

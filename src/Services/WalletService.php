@@ -41,7 +41,6 @@ class WalletService
         ], $attributes);
 
         if ($owner instanceof Model) {
-            $data['owner_type'] = $owner->getMorphClass();
             $data['owner_id'] = $owner->getKey();
         }
 
