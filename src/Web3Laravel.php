@@ -6,8 +6,8 @@ use Elliptic\EC;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
-use Web3\Providers\HttpProvider;
 use Web3\Eth;
+use Web3\Providers\HttpProvider;
 use Web3\Utils as Web3Utils;
 use Web3\Web3;
 
@@ -64,6 +64,7 @@ class Web3Laravel
     public function eth(?int $chainId = null, ?string $rpc = null): Eth
     {
         $client = $this->web3($chainId, $rpc);
+
         /** @phpstan-ignore-next-line access to magic/protected property provided by web3.php */
         return $client->eth;
     }
@@ -81,8 +82,8 @@ class Web3Laravel
         $client = $this->web3($chainId, $rpc);
         $result = '';
         $error = null;
-    /** @phpstan-ignore-next-line web3.php provides this callback-based method dynamically */
-    $client->clientVersion(function ($err, $version) use (&$result, &$error) {
+        /** @phpstan-ignore-next-line web3.php provides this callback-based method dynamically */
+        $client->clientVersion(function ($err, $version) use (&$result, &$error) {
             $error = $err;
             $result = (string) $version;
         });
@@ -97,8 +98,6 @@ class Web3Laravel
      * Call an Eth method that uses a Node-style callback and return the result or throw.
      * Example: ethCall($eth, 'blockNumber') or ethCall($eth, 'call', [$tx, 'latest']).
      *
-     * @param  Eth  $eth
-     * @param  string  $method
      * @param  array<int,mixed>  $args
      * @return mixed
      */

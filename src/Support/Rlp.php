@@ -2,7 +2,6 @@
 
 namespace Roberts\Web3Laravel\Support;
 
-use InvalidArgumentException;
 use Web3\Utils as Web3Utils;
 
 class Rlp

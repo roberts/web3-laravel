@@ -13,16 +13,16 @@ class WalletListCommand extends Command
 
     public function handle(): int
     {
-    $ownerId = $this->option('ownerId');
+        $ownerId = $this->option('ownerId');
 
         $query = Wallet::query();
         if ($ownerId) {
             $query->where('owner_id', $ownerId);
         }
 
-    /** @var \Illuminate\Support\Collection<int,Wallet> $collection */
-    $collection = $query->limit(50)->get();
-    $rows = $collection->map(function (Wallet $w): array {
+        /** @var \Illuminate\Support\Collection<int,Wallet> $collection */
+        $collection = $query->limit(50)->get();
+        $rows = $collection->map(function (Wallet $w): array {
             return [
                 'id' => $w->id,
                 'address' => $w->address,
@@ -34,7 +34,7 @@ class WalletListCommand extends Command
             ];
         })->all();
 
-    $this->table(['ID', 'Address', 'Chain', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
+        $this->table(['ID', 'Address', 'Chain', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
 
         return self::SUCCESS;
     }

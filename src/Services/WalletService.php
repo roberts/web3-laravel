@@ -3,7 +3,6 @@
 namespace Roberts\Web3Laravel\Services;
 
 use Elliptic\EC;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;

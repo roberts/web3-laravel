@@ -43,6 +43,7 @@ class Wallet extends Model
     public function user(): EloquentBelongsTo
     {
         $userModel = config('auth.providers.users.model');
+
         /** @var class-string<\Illuminate\Database\Eloquent\Model> $userModel */
         return $this->belongsTo($userModel, 'owner_id');
     }

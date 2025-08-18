@@ -31,8 +31,8 @@ class PrepareTransaction implements ShouldQueue
         $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Preparing]);
         event(new TransactionPreparing($tx->fresh()));
 
-    /** @var \Roberts\Web3Laravel\Models\Wallet|null $wallet */
-    $wallet = $tx->wallet ?? $tx->wallet()->first();
+        /** @var \Roberts\Web3Laravel\Models\Wallet|null $wallet */
+        $wallet = $tx->wallet ?? $tx->wallet()->first();
         if (! $wallet) {
             $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Failed, 'error' => 'wallet_not_found']);
             event(new TransactionFailed($tx->fresh(), 'wallet_not_found'));

@@ -126,7 +126,7 @@ class Transaction extends Model
     // Convenience status helpers
     public function statusValue(): string
     {
-    return is_string($this->status) ? $this->status : ($this->status->value ?? (string) ($this->status ?? ''));
+        return is_string($this->status) ? $this->status : ($this->status->value ?? (string) ($this->status ?? ''));
     }
 
     public function isPending(): bool

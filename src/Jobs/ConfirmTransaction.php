@@ -27,14 +27,14 @@ class ConfirmTransaction implements ShouldQueue
             return;
         }
 
-    /** @var \Roberts\Web3Laravel\Models\Wallet|null $wallet */
-    $wallet = $tx->wallet ?? $tx->wallet()->first();
+        /** @var \Roberts\Web3Laravel\Models\Wallet|null $wallet */
+        $wallet = $tx->wallet ?? $tx->wallet()->first();
         if (! $wallet) {
             return;
         }
-    /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
-    $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
-    $eth = $manager->ethFrom($wallet->web3());
+        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
+        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
+        $eth = $manager->ethFrom($wallet->web3());
 
         // Get receipt
         try {
@@ -51,7 +51,7 @@ class ConfirmTransaction implements ShouldQueue
         }
 
         // Determine confirmations
-    $currentBlock = $manager->ethCall($eth, 'blockNumber');
+        $currentBlock = $manager->ethCall($eth, 'blockNumber');
         if (empty($receipt->blockNumber) || $currentBlock === null) {
             static::dispatch($tx->id)->delay(now()->addSeconds(10));
 
