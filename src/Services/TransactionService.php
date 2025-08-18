@@ -141,9 +141,9 @@ class TransactionService
         $raw = $txObj->sign($privKeyHex); // hex without 0x
         $rawHex = '0x'.ltrim($raw, '0x');
 
-    $txHash = $manager->ethCall($eth, 'sendRawTransaction', [$rawHex]);
+    $txHash = $this->ethCall($eth, 'sendRawTransaction', [$rawHex]);
 
-        return $txHash;
+    return (string) $txHash;
     }
 
     protected function calculateV(int $recId, int $chainId): int
@@ -231,9 +231,9 @@ class TransactionService
         $signedRlp = Rlp::encodeList($signedItems);
         $rawHex = '0x02'.bin2hex($signedRlp);
 
-    $txHash = $manager->ethCall($eth, 'sendRawTransaction', [$rawHex]);
+    $txHash = $this->ethCall($eth, 'sendRawTransaction', [$rawHex]);
 
-        return $txHash;
+    return (string) $txHash;
     }
 
     private function ethCall($eth, string $method, array $args = [])
