@@ -4,6 +4,7 @@ namespace Roberts\Web3Laravel;
 
 use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
 use Roberts\Web3Laravel\Services\ContractCaller;
+use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -33,6 +34,10 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 Web3LaravelCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletCreateCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletListCommand::class,
+                \Roberts\Web3Laravel\Commands\TokenBalanceCommand::class,
+                \Roberts\Web3Laravel\Commands\TokenInfoCommand::class,
+                \Roberts\Web3Laravel\Commands\TokenMintCommand::class,
+                \Roberts\Web3Laravel\Commands\TokenTransferCommand::class,
                 \Roberts\Web3Laravel\Console\Commands\WatchConfirmationsCommand::class,
             ]);
     }
@@ -49,6 +54,13 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(TransactionService::class, function ($app) {
             return new TransactionService($app->make(Web3Laravel::class));
+        });
+
+        $this->app->singleton(TokenService::class, function ($app) {
+            return new TokenService(
+                $app->make(ContractCaller::class),
+                $app->make(TransactionService::class)
+            );
         });
 
         // Register event service provider for package

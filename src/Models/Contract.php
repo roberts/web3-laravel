@@ -14,6 +14,7 @@ use Roberts\Web3Laravel\Services\ContractCaller;
  * @property string|null $address
  * @property string|null $creator
  * @property array|null $abi
+ * @property-read Blockchain $blockchain
  */
 class Contract extends Model
 {

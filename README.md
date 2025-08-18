@@ -267,6 +267,213 @@ class NotifyOnSubmission
 }
 ```
 
+## Token Operations: Eloquent model & service integration
+
+The package provides a comprehensive `Token` Eloquent model that wraps ERC-20, ERC-721, and ERC-1155 token interactions with clean Laravel syntax. All token operations integrate with the async transaction pipeline.
+
+### Token Model Overview
+
+```php
+use Roberts\Web3Laravel\Models\Token;
+use Roberts\Web3Laravel\Models\Wallet;
+use Roberts\Web3Laravel\Enums\TokenType;
+
+// Find tokens by type
+$erc20Tokens = Token::ofType(TokenType::ERC20)->get();
+$nfts = Token::ofType(TokenType::ERC721)->get();
+
+// Get token information
+$token = Token::find(1);
+$info = $token->getInfo(); // Complete token details with metadata
+$metadata = $token->getMetadata(); // Contract metadata (name, symbol, decimals)
+```
+
+### Balance Operations
+
+```php
+// Basic balance check
+$balance = $token->balanceOf('0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7');
+
+// Formatted balance for display (ERC-20 with decimals)
+$formatted = $token->getFormattedBalance('0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7');
+// Returns: "1,500.50 USDC" instead of raw "1500500000"
+
+// Rich balance information with metadata
+$balanceInfo = $token->getBalanceInfo('0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7');
+/*
+Returns:
+[
+    'raw_balance' => '1500500000',
+    'formatted_balance' => '1,500.50',
+    'token_type' => 'ERC20',
+    'contract_address' => '0x...',
+    'name' => 'USD Coin',
+    'symbol' => 'USDC',
+    'decimals' => 6
+]
+*/
+
+// Check sufficient balance before transfer
+if ($token->hasSufficientBalance('0x...', '1000')) {
+    // Proceed with transfer
+}
+```
+
+### Transfer Operations
+
+```php
+$wallet = Wallet::first();
+
+// Basic transfer (creates async Transaction)
+$transaction = $token->transfer($wallet, '0xRecipient...', '1000');
+
+// Fluent transfer with automatic wallet resolution
+$transaction = $token->transferFrom('0xSender...', '0xRecipient...', '1000');
+$transaction = $token->transferFrom($wallet, '0xRecipient...', '1000');
+
+// Batch transfer to multiple recipients
+$transactions = $token->batchTransfer($wallet, [
+    ['to' => '0xAlice...', 'amount' => '100'],
+    ['to' => '0xBob...', 'amount' => '200'],
+    ['to' => '0xCharlie...', 'amount' => '300'],
+]);
+```
+
+### Minting Operations
+
+```php
+// Basic minting
+$transaction = $token->mint($wallet, '0xRecipient...', '1000');
+
+// Fluent minting with automatic wallet resolution
+$transaction = $token->mintTo('0xRecipient...', '1000', $minterWallet);
+$transaction = $token->mintTo('0xRecipient...', '1000', '0xMinterAddress...');
+
+// NFT minting with metadata
+$transaction = $token->mintTo(
+    '0xRecipient...', 
+    '1', 
+    $minterWallet, 
+    '123', // token_id
+    'ipfs://QmYourMetadataHash' // uri
+);
+
+// Batch minting
+$transactions = $token->batchMint($minterWallet, [
+    ['to' => '0xUser1...', 'amount' => '1', 'token_id' => '101'],
+    ['to' => '0xUser2...', 'amount' => '1', 'token_id' => '102'],
+]);
+```
+
+### Approval Operations (ERC-20)
+
+```php
+// Approve spender
+$transaction = $token->approve($ownerWallet, '0xSpender...', '1000');
+
+// Fluent approval
+$transaction = $token->approveSpender($ownerWallet, '0xSpender...', '1000');
+$transaction = $token->approveSpender('0xOwner...', '0xSpender...', '1000');
+
+// Check current allowance
+$allowance = $token->allowance('0xOwner...', '0xSpender...');
+
+// Check if approved for specific amount
+if ($token->isApproved('0xOwner...', '0xSpender...', '1000')) {
+    // Spender can transfer up to 1000 tokens
+}
+```
+
+### NFT-Specific Operations
+
+```php
+// Check NFT ownership (ERC-721)
+$owner = $token->ownerOf('123'); // token_id
+
+// Check ownership in balance info
+$info = $token->getBalanceInfo('0x...', '123');
+echo $info['is_owner']; // true/false
+```
+
+### Transaction Tracking
+
+```php
+// Get all transactions for this token
+$allTxs = $token->transactions()->get();
+
+// Get pending transactions
+$pending = $token->pendingTransactions()->get();
+
+// Get recent transactions
+$recent = $token->recentTransactions(10)->get();
+
+// Track a specific operation
+$transaction = $token->transferFrom($wallet, '0x...', '1000');
+echo $transaction->status; // 'pending', 'submitted', 'confirmed', 'failed'
+```
+
+### Metadata Management
+
+```php
+// Refresh metadata from blockchain
+$token->refreshMetadata();
+
+// Create token with metadata populated
+$token = Token::createWithMetadata([
+    'contract_id' => $contract->id,
+    'token_type' => TokenType::ERC20,
+    'quantity' => '1000000000000000000000', // 1000 tokens with 18 decimals
+]);
+
+// Format amounts based on decimals
+$raw = '1000000000000000000'; // 1 token with 18 decimals
+$formatted = $token->formatAmount($raw); // "1.0"
+
+$formatted = '1.5';
+$raw = $token->parseAmount($formatted); // "1500000000000000000"
+```
+
+### Artisan Commands
+
+The package includes convenient Artisan commands for token operations:
+
+```bash
+# Check token balance
+php artisan web3:token:balance 1 0x742d35Cc6634C0532925a3b8D4d7c3e8d1e9a5C7 --format
+
+# Transfer tokens
+php artisan web3:token:transfer 1 0xSender... 0xRecipient... 1000
+
+# Mint tokens
+php artisan web3:token:mint 1 0xMinter... 0xRecipient... 1000 --token-id=123
+
+# Get token information
+php artisan web3:token:info 1
+```
+
+### Type Safety & Validation
+
+```php
+// Type checking methods
+if ($token->isERC20()) {
+    $decimals = $token->decimals;
+    $symbol = $token->symbol;
+}
+
+if ($token->isERC721()) {
+    $owner = $token->ownerOf($tokenId);
+}
+
+if ($token->isERC1155()) {
+    // Handle multi-token operations
+}
+
+// All operations validate addresses and amounts
+// Throws exceptions for invalid inputs
+```
+
+All token operations create `Transaction` models that are processed asynchronously through the same pipeline as regular transactions, with full lifecycle event support and confirmation tracking.
+
 ## Features - Core Functionality
 
 RPC & Provider Management: The package should allow for easy configuration of the blockchain's RPC endpoint (like Base). It should handle the instantiation of the Web3 class and its provider, making it available throughout the Laravel application via a Facade or service container.

@@ -5,8 +5,20 @@ namespace Roberts\Web3Laravel\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Roberts\Web3Laravel\Enums\TokenType;
+use Roberts\Web3Laravel\Services\TokenService;
 
+/**
+ * @property int $id
+ * @property int $contract_id
+ * @property TokenType $token_type
+ * @property string $quantity
+ * @property string|null $token_id
+ * @property string|null $symbol
+ * @property int|null $decimals
+ * @property-read Contract $contract
+ */
 class Token extends Model
 {
     use HasFactory;
@@ -19,10 +31,438 @@ class Token extends Model
         'contract_id' => 'integer',
         'quantity' => 'string',
         'token_type' => TokenType::class,
+        'decimals' => 'integer',
     ];
 
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class);
+    }
+
+    /**
+     * Get transactions related to this token.
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'contract_id', 'contract_id');
+    }
+
+    // Convenience methods for token operations
+
+    /**
+     * Get balance of this token for a given address.
+     */
+    public function balanceOf(string $address): string
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->balanceOf($this, $address, $this->token_id);
+    }
+
+    /**
+     * Transfer this token from a wallet to another address.
+     */
+    public function transfer(Wallet $from, string $to, string $amount, ?string $tokenId = null): Transaction
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->transfer($this, $from, $to, $amount, $tokenId ?? $this->token_id);
+    }
+
+    /**
+     * Approve spender to transfer this token.
+     */
+    public function approve(Wallet $owner, string $spender, string $amount): Transaction
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->approve($this, $owner, $spender, $amount);
+    }
+
+    /**
+     * Check allowance for ERC-20 tokens.
+     */
+    public function allowance(string $owner, string $spender): string
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->allowance($this, $owner, $spender);
+    }
+
+    /**
+     * Mint this token to an address.
+     */
+    public function mint(Wallet $minter, string $to, string $amount, ?string $tokenId = null, array $data = []): Transaction
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->mint($this, $minter, $to, $amount, $tokenId, $data);
+    }
+
+    /**
+     * Burn this token.
+     */
+    public function burn(Wallet $burner, string $amount, ?string $tokenId = null): Transaction
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->burn($this, $burner, $amount, $tokenId);
+    }
+
+    /**
+     * Get token metadata (name, symbol, decimals, etc.).
+     */
+    public function getMetadata(): array
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->getTokenMetadata($this);
+    }
+
+    /**
+     * Get owner of NFT (ERC-721 only).
+     */
+    public function ownerOf(string $tokenId): string
+    {
+        /** @var TokenService $service */
+        $service = app(TokenService::class);
+        return $service->ownerOf($this, $tokenId);
+    }
+
+    // Scopes and helpers
+
+    /**
+     * Scope to filter by token type.
+     */
+    public function scopeOfType($query, TokenType $type)
+    {
+        return $query->where('token_type', $type);
+    }
+
+    /**
+     * Check if this is an ERC-20 token.
+     */
+    public function isERC20(): bool
+    {
+        return $this->token_type === TokenType::ERC20;
+    }
+
+    /**
+     * Check if this is an ERC-721 token.
+     */
+    public function isERC721(): bool
+    {
+        return $this->token_type === TokenType::ERC721;
+    }
+
+    /**
+     * Check if this is an ERC-1155 token.
+     */
+    public function isERC1155(): bool
+    {
+        return $this->token_type === TokenType::ERC1155;
+    }
+
+    /**
+     * Format amount according to token decimals (for ERC-20).
+     */
+    public function formatAmount(string $rawAmount): string
+    {
+        if (!$this->isERC20() || !$this->decimals) {
+            return $rawAmount;
+        }
+
+        $decimals = $this->decimals;
+        $length = strlen($rawAmount);
+        
+        if ($length <= $decimals) {
+            return '0.' . str_pad($rawAmount, $decimals, '0', STR_PAD_LEFT);
+        }
+        
+        $wholePart = substr($rawAmount, 0, $length - $decimals);
+        $decimalPart = substr($rawAmount, $length - $decimals);
+        
+        return $wholePart . '.' . rtrim($decimalPart, '0');
+    }
+
+    /**
+     * Parse formatted amount to raw amount (for ERC-20).
+     */
+    public function parseAmount(string $formattedAmount): string
+    {
+        if (!$this->isERC20() || !$this->decimals) {
+            return $formattedAmount;
+        }
+
+        if (str_contains($formattedAmount, '.')) {
+            [$whole, $decimal] = explode('.', $formattedAmount, 2);
+            $decimal = str_pad(substr($decimal, 0, $this->decimals), $this->decimals, '0');
+            return ltrim($whole . $decimal, '0') ?: '0';
+        }
+        
+        return $formattedAmount . str_repeat('0', $this->decimals);
+    }
+
+    // ========================================
+    // Eloquent-style Token Operation Methods
+    // ========================================
+
+    /**
+     * Check if an address has sufficient balance for a transfer.
+     */
+    public function hasSufficientBalance(string $address, string $amount, ?string $tokenId = null): bool
+    {
+        try {
+            $balance = $this->balanceOf($address);
+            
+            if ($this->isERC721()) {
+                // For NFTs, check if they own the specific token
+                return $tokenId && $this->ownerOf($tokenId) === strtolower($address);
+            }
+            
+            return bccomp($balance, $amount, 0) >= 0;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Transfer tokens with automatic wallet resolution.
+     */
+    public function transferFrom(string|Wallet $from, string $to, string $amount, ?string $tokenId = null): Transaction
+    {
+        $wallet = $from instanceof Wallet ? $from : $this->resolveWallet($from);
+        return $this->transfer($wallet, $to, $amount, $tokenId);
+    }
+
+    /**
+     * Mint tokens with automatic wallet resolution.
+     */
+    public function mintTo(string $to, string $amount, string|Wallet $minter, ?string $tokenId = null, ?string $uri = null): Transaction
+    {
+        $wallet = $minter instanceof Wallet ? $minter : $this->resolveWallet($minter);
+        $data = $uri ? ['uri' => $uri] : [];
+        return $this->mint($wallet, $to, $amount, $tokenId, $data);
+    }
+
+    /**
+     * Burn tokens with automatic wallet resolution.
+     */
+    public function burnFrom(string|Wallet $burner, string $amount, ?string $tokenId = null): Transaction
+    {
+        $wallet = $burner instanceof Wallet ? $burner : $this->resolveWallet($burner);
+        return $this->burn($wallet, $amount, $tokenId ?? $this->token_id);
+    }
+
+    /**
+     * Approve spender with automatic wallet resolution.
+     */
+    public function approveSpender(string|Wallet $owner, string $spender, string $amount): Transaction
+    {
+        $wallet = $owner instanceof Wallet ? $owner : $this->resolveWallet($owner);
+        return $this->approve($wallet, $spender, $amount);
+    }
+
+    /**
+     * Get formatted balance for display.
+     */
+    public function getFormattedBalance(string $address, ?string $tokenId = null): string
+    {
+        $balance = $this->balanceOf($address);
+        
+        if ($this->isERC20() && $this->decimals) {
+            return $this->formatAmount($balance);
+        }
+        
+        return $balance;
+    }
+
+    /**
+     * Get balance with metadata for rich display.
+     */
+    public function getBalanceInfo(string $address, ?string $tokenId = null): array
+    {
+        $balance = $this->balanceOf($address);
+        $metadata = $this->getMetadata();
+        
+        $info = [
+            'raw_balance' => $balance,
+            'formatted_balance' => $this->getFormattedBalance($address, $tokenId),
+            'token_type' => $this->token_type->value,
+            'contract_address' => $this->contract->address,
+        ];
+        
+        if (!empty($metadata)) {
+            $info = array_merge($info, $metadata);
+        }
+        
+        if ($this->isERC721() && $tokenId) {
+            try {
+                $info['owner'] = $this->ownerOf($tokenId);
+                $info['is_owner'] = strtolower($info['owner']) === strtolower($address);
+            } catch (\Exception $e) {
+                $info['owner'] = null;
+                $info['is_owner'] = false;
+            }
+        }
+        
+        return $info;
+    }
+
+    /**
+     * Check if address is approved to spend tokens.
+     */
+    public function isApproved(string $owner, string $spender, string $amount = '1'): bool
+    {
+        if (!$this->isERC20()) {
+            return false; // Approval concept mainly applies to ERC-20
+        }
+        
+        try {
+            $allowance = $this->allowance($owner, $spender);
+            return bccomp($allowance, $amount, 0) >= 0;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Get all pending transactions for this token.
+     */
+    public function pendingTransactions()
+    {
+        return $this->transactions()
+            ->whereIn('status', ['pending', 'prepared', 'submitted'])
+            ->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get recent transactions for this token.
+     */
+    public function recentTransactions(int $limit = 10)
+    {
+        return $this->transactions()
+            ->orderBy('created_at', 'desc')
+            ->limit($limit);
+    }
+
+    /**
+     * Batch transfer to multiple recipients.
+     */
+    public function batchTransfer(string|Wallet $from, array $recipients): array
+    {
+        $wallet = $from instanceof Wallet ? $from : $this->resolveWallet($from);
+        $transactions = [];
+        
+        foreach ($recipients as $recipient) {
+            $to = $recipient['to'];
+            $amount = $recipient['amount'];
+            $tokenId = $recipient['token_id'] ?? $this->token_id;
+            
+            $transactions[] = $this->transfer($wallet, $to, $amount, $tokenId);
+        }
+        
+        return $transactions;
+    }
+
+    /**
+     * Batch mint to multiple recipients.
+     */
+    public function batchMint(string|Wallet $minter, array $recipients): array
+    {
+        $wallet = $minter instanceof Wallet ? $minter : $this->resolveWallet($minter);
+        $transactions = [];
+        
+        foreach ($recipients as $recipient) {
+            $to = $recipient['to'];
+            $amount = $recipient['amount'];
+            $tokenId = $recipient['token_id'] ?? null;
+            $data = $recipient['data'] ?? [];
+            
+            $transactions[] = $this->mint($wallet, $to, $amount, $tokenId, $data);
+        }
+        
+        return $transactions;
+    }
+
+    /**
+     * Get comprehensive token information.
+     */
+    public function getInfo(): array
+    {
+        $info = [
+            'id' => $this->id,
+            'type' => $this->token_type->value,
+            'contract_address' => $this->contract->address,
+            'blockchain' => [
+                'name' => $this->contract->blockchain->name,
+                'chain_id' => $this->contract->blockchain->chain_id,
+            ],
+            'quantity' => $this->quantity,
+        ];
+        
+        if ($this->token_id) {
+            $info['token_id'] = $this->token_id;
+        }
+        
+        // Add metadata
+        try {
+            $metadata = $this->getMetadata();
+            if (!empty($metadata)) {
+                $info['metadata'] = $metadata;
+            }
+        } catch (\Exception $e) {
+            $info['metadata'] = null;
+        }
+        
+        return $info;
+    }
+
+    /**
+     * Refresh token metadata from contract.
+     */
+    public function refreshMetadata(): self
+    {
+        try {
+            $metadata = $this->getMetadata();
+            
+            if (isset($metadata['symbol'])) {
+                $this->symbol = $metadata['symbol'];
+            }
+            
+            if (isset($metadata['decimals'])) {
+                $this->decimals = (int) $metadata['decimals'];
+            }
+            
+            $this->save();
+        } catch (\Exception $e) {
+            // Silently fail - metadata might not be available
+        }
+        
+        return $this;
+    }
+
+    /**
+     * Create a new token instance with metadata populated.
+     */
+    public static function createWithMetadata(array $attributes): self
+    {
+        $token = static::create($attributes);
+        $token->refreshMetadata();
+        return $token;
+    }
+
+    /**
+     * Resolve a wallet from address string.
+     */
+    private function resolveWallet(string $address): Wallet
+    {
+        $wallet = Wallet::where('address', strtolower($address))->first();
+        
+        if (!$wallet) {
+            throw new \InvalidArgumentException("Wallet not found for address: {$address}");
+        }
+        
+        return $wallet;
     }
 }

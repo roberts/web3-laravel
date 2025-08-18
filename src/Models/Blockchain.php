@@ -5,6 +5,19 @@ namespace Roberts\Web3Laravel\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property int $chain_id
+ * @property string $rpc_url
+ * @property string|null $ws_url
+ * @property string $native_symbol
+ * @property int $native_decimals
+ * @property bool $evm
+ * @property bool $supports_eip1559
+ * @property bool $is_active
+ * @property bool $is_default
+ */
 class Blockchain extends Model
 {
     use HasFactory;
