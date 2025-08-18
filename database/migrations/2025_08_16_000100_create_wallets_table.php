@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('address')->unique();
             $table->text('key')->nullable(); // encrypted private key (Crypt)
+            $table->string('wallet_type')->default('custodial'); // custodial, shared, external
             $table->foreignId('owner_id')->nullable()->constrained('users'); // fixed owner to users table
             $table->foreignId('blockchain_id')->nullable()->constrained('blockchains');
             $table->boolean('is_active')->default(true);

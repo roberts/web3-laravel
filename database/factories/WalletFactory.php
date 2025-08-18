@@ -5,6 +5,7 @@ namespace Roberts\Web3Laravel\Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
+use Roberts\Web3Laravel\Enums\WalletType;
 
 /**
  * @extends Factory<Wallet>
@@ -18,6 +19,7 @@ class WalletFactory extends Factory
         return [
             'address' => '0x'.strtolower(bin2hex(random_bytes(20))),
             'key' => '0x'.strtolower(bin2hex(random_bytes(32))), // will be encrypted by mutator
+            'wallet_type' => WalletType::CUSTODIAL,
             'owner_id' => null,
             'blockchain_id' => Blockchain::factory(),
             'is_active' => true,
@@ -34,5 +36,29 @@ class WalletFactory extends Factory
     public function withKey(?string $hex = null): self
     {
         return $this->state(fn () => ['key' => $hex ?? ('0x'.strtolower(bin2hex(random_bytes(32))))]);
+    }
+
+    public function custodial(): self
+    {
+        return $this->state(fn () => [
+            'wallet_type' => WalletType::CUSTODIAL,
+            'key' => '0x'.strtolower(bin2hex(random_bytes(32))),
+        ]);
+    }
+
+    public function shared(): self
+    {
+        return $this->state(fn () => [
+            'wallet_type' => WalletType::SHARED,
+            'key' => '0x'.strtolower(bin2hex(random_bytes(32))),
+        ]);
+    }
+
+    public function external(): self
+    {
+        return $this->state(fn () => [
+            'wallet_type' => WalletType::EXTERNAL,
+            'key' => null, // External wallets don't store private keys
+        ]);
     }
 }

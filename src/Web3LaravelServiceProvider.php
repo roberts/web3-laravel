@@ -4,6 +4,7 @@ namespace Roberts\Web3Laravel;
 
 use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
 use Roberts\Web3Laravel\Services\ContractCaller;
+use Roberts\Web3Laravel\Services\KeyReleaseService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
 use Spatie\LaravelPackageTools\Package;
@@ -29,11 +30,13 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 'create_contracts_table',
                 'create_tokens_table',
                 'create_transactions_table',
+                'create_key_releases_table',
             ])
             ->hasCommands([
                 Web3LaravelCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletCreateCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletListCommand::class,
+                \Roberts\Web3Laravel\Commands\WalletTypeCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenBalanceCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenInfoCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenMintCommand::class,
@@ -61,6 +64,10 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 $app->make(ContractCaller::class),
                 $app->make(TransactionService::class)
             );
+        });
+
+        $this->app->singleton(KeyReleaseService::class, function ($app) {
+            return new KeyReleaseService();
         });
 
         // Register event service provider for package
