@@ -8,6 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Roberts\Web3Laravel\Services\ContractCaller;
 
+/**
+ * @property int $id
+ * @property int|null $blockchain_id
+ * @property string|null $address
+ * @property string|null $creator
+ * @property array|null $abi
+ */
 class Contract extends Model
 {
     use HasFactory;

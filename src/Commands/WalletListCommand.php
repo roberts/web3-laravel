@@ -21,7 +21,9 @@ class WalletListCommand extends Command
             $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
         }
 
-        $rows = $query->limit(50)->get()->map(function (Wallet $w) {
+    /** @var \Illuminate\Support\Collection<int,Wallet> $collection */
+    $collection = $query->limit(50)->get();
+    $rows = $collection->map(function (Wallet $w): array {
             return [
                 'id' => $w->id,
                 'address' => $w->address,

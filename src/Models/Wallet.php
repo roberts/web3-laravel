@@ -10,6 +10,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 
+/**
+ * @property int $id
+ * @property string $address
+ * @property string|null $key
+ * @property int|null $blockchain_id
+ * @property string|null $owner_type
+ * @property int|null $owner_id
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $last_used_at
+ * @property array|null $meta
+ * @property-read Blockchain|null $blockchain
+ */
 class Wallet extends Model
 {
     use HasFactory, InteractsWithWeb3;

@@ -17,8 +17,10 @@ class TransactionService
     /** Estimate gas for a transaction using the wallet's network. */
     public function estimateGas(Wallet $from, array $tx, string $blockTag = 'latest'): string
     {
-        $client = $from->web3();
-        $eth = $client->eth;
+    $client = $from->web3();
+    /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
+    $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
+    $eth = $manager->ethFrom($client);
         $payload = array_merge(['from' => strtolower($from->address)], $tx);
 
         return (string) $this->ethCall($eth, 'estimateGas', [$payload, $blockTag]);
@@ -27,7 +29,9 @@ class TransactionService
     /** Suggest EIP-1559 fee parameters (maxPriorityFeePerGas, maxFeePerGas) as hex strings. */
     public function suggestFees(Wallet $from): array
     {
-        $eth = $from->web3()->eth;
+    /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
+    $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
+    $eth = $manager->ethFrom($from->web3());
         // priority fee
         try {
             $priority = $this->ethCall($eth, 'maxPriorityFeePerGas');
@@ -61,8 +65,10 @@ class TransactionService
     public function sendRaw(Wallet $from, array $tx): string
     {
         // Resolve chain & client
-        $client = $from->web3();
-        $eth = $client->eth;
+    $client = $from->web3();
+    /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
+    $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
+    $eth = $manager->ethFrom($client);
 
         // Fetch missing fields
         $nonce = $tx['nonce'] ?? $this->ethCall($eth, 'getTransactionCount', [strtolower($from->address), 'pending']);
@@ -135,7 +141,7 @@ class TransactionService
         $raw = $txObj->sign($privKeyHex); // hex without 0x
         $rawHex = '0x'.ltrim($raw, '0x');
 
-        $txHash = $eth->sendRawTransaction($rawHex);
+    $txHash = $manager->ethCall($eth, 'sendRawTransaction', [$rawHex]);
 
         return $txHash;
     }
@@ -149,8 +155,10 @@ class TransactionService
     // EIP-1559 type 0x02 path
     protected function sendEip1559(Wallet $from, array $tx): string
     {
-        $client = $from->web3();
-        $eth = $client->eth;
+    $client = $from->web3();
+    /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
+    $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
+    $eth = $manager->ethFrom($client);
 
         $nonce = $tx['nonce'];
         $to = $tx['to'] ?? null;
@@ -223,7 +231,7 @@ class TransactionService
         $signedRlp = Rlp::encodeList($signedItems);
         $rawHex = '0x02'.bin2hex($signedRlp);
 
-        $txHash = $eth->sendRawTransaction($rawHex);
+    $txHash = $manager->ethCall($eth, 'sendRawTransaction', [$rawHex]);
 
         return $txHash;
     }

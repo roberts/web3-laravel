@@ -18,7 +18,7 @@ trait InteractsWithWeb3
         $rpc = null;
         $chainId = null;
         /** @var Blockchain|null $chain */
-        $chain = method_exists($this, 'blockchain') ? $this->blockchain : null;
+        $chain = $this->blockchain ?? null;
         if ($chain instanceof Blockchain) {
             $chainId = $chain->chain_id ?? null;
             $rpc = $chain->rpc ?? null;
@@ -28,9 +28,12 @@ trait InteractsWithWeb3
     }
 
     /** Low-level ETH proxy. */
-    protected function eth()
+    protected function eth(): \Web3\Eth
     {
-        return $this->web3()->eth;
+        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
+        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
+
+        return $manager->ethFrom($this->web3());
     }
 
     /** Helper to call an eth method and return its result synchronously. */

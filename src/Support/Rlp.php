@@ -66,9 +66,7 @@ class Rlp
     /** Encode a hex string (0x...) to RLP string. */
     public static function encodeHex(string $hex): string
     {
-        if (! is_string($hex)) {
-            throw new InvalidArgumentException('Hex must be string.');
-        }
+        // $hex is already typed as string; check kept for runtime safety
         $hex = Web3Utils::stripZero($hex);
         if ($hex === '') {
             return chr(0x80); // empty

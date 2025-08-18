@@ -23,14 +23,14 @@ class WatchConfirmationsCommand extends Command
             $this->info('confirmations_mode is not websocket; falling back to periodic polling.');
         }
 
-        $web3 = $mode === 'websocket' ? $manager->web3Ws($chainId) : $manager->web3($chainId);
-        $eth = $web3->eth;
+    $web3 = $mode === 'websocket' ? $manager->web3Ws($chainId) : $manager->web3($chainId);
+    $eth = $manager->ethFrom($web3);
 
         $this->info('Starting confirmations watcher (mode='.$mode.')...');
         $lastBlock = null;
 
         // Subscribe if possible (event-driven), else poll blockNumber
-        $supportsSub = method_exists($eth, 'subscribe');
+    $supportsSub = method_exists($eth, 'subscribe');
 
         if ($supportsSub && $mode === 'websocket') {
             // Use newHeads subscription if available
@@ -47,15 +47,14 @@ class WatchConfirmationsCommand extends Command
             }
         }
 
-        while (true) {
+    $iterations = 0;
+    while (true) {
             if (! $supportsSub) {
-                $blockNumber = null;
-                $eth->blockNumber(function ($err, $res) use (&$blockNumber) {
-                    if (! $err) {
-                        $blockNumber = $res;
-                    }
-                });
-                $lastBlock = $blockNumber;
+                try {
+                    $lastBlock = $manager->ethCall($eth, 'blockNumber');
+                } catch (\Throwable) {
+                    $lastBlock = null;
+                }
             }
 
             if ($lastBlock) {
@@ -69,6 +68,9 @@ class WatchConfirmationsCommand extends Command
             }
 
             sleep($interval);
+            if (app()->runningUnitTests() && ++$iterations > 3) {
+                break; // prevent infinite loop during analysis/tests
+            }
         }
 
         // Long-running command; no return needed

@@ -8,6 +8,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Roberts\Web3Laravel\Enums\TransactionStatus;
 use Roberts\Web3Laravel\Events\TransactionRequested;
 
+/**
+ * @property int $id
+ * @property int $wallet_id
+ * @property int|null $blockchain_id
+ * @property int|null $contract_id
+ * @property string|null $from
+ * @property string|null $to
+ * @property string|null $value
+ * @property string|null $data
+ * @property int|null $gas_limit
+ * @property string|null $gwei
+ * @property string|null $fee_max
+ * @property string|null $priority_max
+ * @property bool|null $is_1559
+ * @property int|null $nonce
+ * @property int|null $chain_id
+ * @property array|null $function_params
+ * @property array|null $meta
+ * @property TransactionStatus|string $status
+ * @property string|null $error
+ * @property string|null $tx_hash
+ * @property-read Wallet $wallet
+ */
 class Transaction extends Model
 {
     use HasFactory;
@@ -45,13 +68,14 @@ class Transaction extends Model
             if (empty($tx->gas_limit)) {
                 /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
                 $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
+                /** @var Wallet|null $wallet */
                 $wallet = $tx->wallet ?? $tx->wallet()->first();
-                if ($wallet) {
+                if ($wallet instanceof Wallet) {
                     $estimateHex = $svc->estimateGas($wallet, array_filter([
                         'to' => $tx->to,
                         'value' => $tx->value,
                         'data' => $tx->data,
-                    ], fn ($v) => $v !== null && $v !== '' && $v !== 0));
+                    ], fn ($v) => $v !== null && $v !== ''));
                     $gasInt = is_string($estimateHex) && str_starts_with($estimateHex, '0x')
                         ? hexdec(substr($estimateHex, 2))
                         : (int) $estimateHex;
@@ -66,8 +90,9 @@ class Transaction extends Model
             }
             if ($tx->is_1559) {
                 if (empty($tx->priority_max) || empty($tx->fee_max)) {
+                    /** @var Wallet|null $wallet */
                     $wallet = $wallet ?? ($tx->wallet ?? $tx->wallet()->first());
-                    if ($wallet) {
+                    if ($wallet instanceof Wallet) {
                         /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
                         $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
                         $fees = $svc->suggestFees($wallet);
@@ -101,7 +126,7 @@ class Transaction extends Model
     // Convenience status helpers
     public function statusValue(): string
     {
-        return is_string($this->status) ? $this->status : ($this->status->value ?? (string) $this->status);
+    return is_string($this->status) ? $this->status : ($this->status->value ?? (string) ($this->status ?? ''));
     }
 
     public function isPending(): bool

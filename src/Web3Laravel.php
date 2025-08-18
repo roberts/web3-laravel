@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Web3\Providers\HttpProvider;
+use Web3\Eth;
 use Web3\Utils as Web3Utils;
 use Web3\Web3;
 
@@ -57,6 +58,68 @@ class Web3Laravel
         }
 
         return $this->web3($chainId, null);
+    }
+
+    /** Convenience: get an Eth API instance for the given chain. */
+    public function eth(?int $chainId = null, ?string $rpc = null): Eth
+    {
+        $client = $this->web3($chainId, $rpc);
+        /** @phpstan-ignore-next-line access to magic/protected property provided by web3.php */
+        return $client->eth;
+    }
+
+    /** Convenience: extract Eth API from an existing Web3 client. */
+    public function ethFrom(Web3 $client): Eth
+    {
+        /** @phpstan-ignore-next-line access to magic/protected property provided by web3.php */
+        return $client->eth;
+    }
+
+    /** Synchronously fetch clientVersion via callback-based API. */
+    public function clientVersionString(?int $chainId = null, ?string $rpc = null): string
+    {
+        $client = $this->web3($chainId, $rpc);
+        $result = '';
+        $error = null;
+    /** @phpstan-ignore-next-line web3.php provides this callback-based method dynamically */
+    $client->clientVersion(function ($err, $version) use (&$result, &$error) {
+            $error = $err;
+            $result = (string) $version;
+        });
+        if ($error) {
+            throw new \RuntimeException(method_exists($error, 'getMessage') ? $error->getMessage() : 'clientVersion error');
+        }
+
+        return $result;
+    }
+
+    /**
+     * Call an Eth method that uses a Node-style callback and return the result or throw.
+     * Example: ethCall($eth, 'blockNumber') or ethCall($eth, 'call', [$tx, 'latest']).
+     *
+     * @param  Eth  $eth
+     * @param  string  $method
+     * @param  array<int,mixed>  $args
+     * @return mixed
+     */
+    public function ethCall(Eth $eth, string $method, array $args = [])
+    {
+        $result = null;
+        $error = null;
+        $cb = function ($err, $res) use (&$error, &$result) {
+            $error = $err;
+            $result = $res;
+        };
+        $args[] = $cb;
+        $eth->{$method}(...$args);
+        if ($error) {
+            if ($error instanceof \Throwable) {
+                throw $error;
+            }
+            throw new \RuntimeException('eth call error for '.$method);
+        }
+
+        return $result;
     }
 
     /**

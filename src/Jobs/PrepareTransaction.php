@@ -31,7 +31,8 @@ class PrepareTransaction implements ShouldQueue
         $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Preparing]);
         event(new TransactionPreparing($tx->fresh()));
 
-        $wallet = $tx->wallet ?? $tx->wallet()->first();
+    /** @var \Roberts\Web3Laravel\Models\Wallet|null $wallet */
+    $wallet = $tx->wallet ?? $tx->wallet()->first();
         if (! $wallet) {
             $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Failed, 'error' => 'wallet_not_found']);
             event(new TransactionFailed($tx->fresh(), 'wallet_not_found'));
@@ -52,8 +53,8 @@ class PrepareTransaction implements ShouldQueue
                     'to' => $tx->to,
                     'value' => $tx->value,
                     'data' => $tx->data,
-                ], fn ($v) => $v !== null && $v !== '' && $v !== 0));
-                $gasInt = (is_string($estimateHex) && str_starts_with($estimateHex, '0x')) ? hexdec(substr($estimateHex, 2)) : (int) $estimateHex;
+                ], fn ($v) => $v !== null && $v !== ''));
+                $gasInt = str_starts_with($estimateHex, '0x') ? hexdec(substr($estimateHex, 2)) : (int) $estimateHex;
                 $tx->gas_limit = (int) ceil($gasInt * 1.12); // safety margin
             } catch (\Throwable $e) {
                 // fallback minimal gas
@@ -93,9 +94,7 @@ class PrepareTransaction implements ShouldQueue
         if (! app()->runningUnitTests()) {
             try {
                 $balanceHex = $wallet->balance();
-                if (! is_string($balanceHex)) {
-                    $balanceHex = (string) $balanceHex;
-                }
+                $balanceHex = (string) $balanceHex;
                 // If balance is unavailable/empty, skip check
                 if ($balanceHex !== '') {
                     $requiredHex = $this->estimateRequiredWeiHex($tx);

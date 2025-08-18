@@ -28,7 +28,7 @@ class ContractCaller
      */
     public function call(array $abi, string $to, string $function, array $params = [], ?string $from = null, string $blockTag = 'latest'): array
     {
-        $eth = $this->web3->web3()->eth;
+    $eth = $this->web3->eth();
 
         $data = $this->encodeCallData($abi, $function, $params);
 
@@ -40,7 +40,7 @@ class ContractCaller
             $tx['from'] = $from;
         }
 
-        $raw = $eth->call($tx, $blockTag);
+    $raw = $this->web3->ethCall($eth, 'call', [$tx, $blockTag]);
 
         return $this->decodeCallResult($abi, $function, $raw);
     }
