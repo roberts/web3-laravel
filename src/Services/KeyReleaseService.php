@@ -15,12 +15,12 @@ class KeyReleaseService
 {
     /**
      * Securely release a wallet's private key to its owner.
-     * 
+     *
      * @throws KeyReleaseException
      */
     public function releasePrivateKey(
-        Wallet $wallet, 
-        Model $user, 
+        Wallet $wallet,
+        Model $user,
         ?Request $request = null
     ): array {
         // Security validation
@@ -33,7 +33,7 @@ class KeyReleaseService
             // Get the decrypted private key
             $privateKey = $wallet->decryptKey();
 
-            if (!$privateKey) {
+            if (! $privateKey) {
                 throw new KeyReleaseException('Wallet does not have a private key stored');
             }
 
@@ -89,13 +89,13 @@ class KeyReleaseService
                 'ip_address' => $securityContext['ip_address'],
             ]);
 
-            throw new KeyReleaseException('Failed to release private key: ' . $e->getMessage(), 0, $e);
+            throw new KeyReleaseException('Failed to release private key: '.$e->getMessage(), 0, $e);
         }
     }
 
     /**
      * Validate that the key release request is authorized and secure.
-     * 
+     *
      * @throws KeyReleaseException
      */
     private function validateKeyReleaseRequest(Wallet $wallet, Model $user): void
@@ -113,17 +113,17 @@ class KeyReleaseService
         }
 
         // 2. Verify wallet can store private keys
-        if (!$wallet->canStorePrivateKey()) {
+        if (! $wallet->canStorePrivateKey()) {
             throw new KeyReleaseException('This wallet type cannot have private keys released');
         }
 
         // 3. Verify wallet has a private key
-        if (!$wallet->key) {
+        if (! $wallet->key) {
             throw new KeyReleaseException('This wallet does not have a private key stored');
         }
 
         // 4. Verify wallet is active
-        if (!$wallet->is_active) {
+        if (! $wallet->is_active) {
             throw new KeyReleaseException('Cannot release key for inactive wallet');
         }
 
@@ -144,7 +144,7 @@ class KeyReleaseService
         }
 
         // 6. Verify user is authenticated
-        if (!Auth::check() || Auth::id() !== $user->getKey()) {
+        if (! Auth::check() || Auth::id() !== $user->getKey()) {
             throw new KeyReleaseException('User must be authenticated to release private key');
         }
     }
@@ -219,7 +219,7 @@ class KeyReleaseService
             'can_release' => $canRelease,
             'reasons' => $reasons,
             'wallet_type' => $wallet->wallet_type->value,
-            'has_private_key' => !is_null($wallet->key),
+            'has_private_key' => ! is_null($wallet->key),
         ];
     }
 }

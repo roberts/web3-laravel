@@ -47,7 +47,7 @@ it('has proper wallet type helper methods', function () {
 
 it('provides descriptive labels and descriptions', function () {
     $custodial = Wallet::factory()->custodial()->create();
-    
+
     expect($custodial->getTypeLabel())->toBe('Custodial');
     expect($custodial->getTypeDescription())->toContain('Fully managed wallet');
 });
@@ -64,6 +64,6 @@ it('can scope wallets by type', function () {
 
 it('throws exception when setting private key on external wallet', function () {
     $external = Wallet::factory()->external()->create();
-    
-    expect(fn() => $external->setPrivateKey('0x123'))->toThrow(InvalidArgumentException::class);
+
+    expect(fn () => $external->setPrivateKey('0x123'))->toThrow(InvalidArgumentException::class);
 });

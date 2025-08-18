@@ -67,7 +67,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         });
 
         $this->app->singleton(KeyReleaseService::class, function ($app) {
-            return new KeyReleaseService();
+            return new KeyReleaseService;
         });
 
         // Register event service provider for package

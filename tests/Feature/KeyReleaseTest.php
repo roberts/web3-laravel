@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Auth;
-use Roberts\Web3Laravel\Enums\WalletType;
 use Roberts\Web3Laravel\Models\KeyRelease;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
@@ -51,7 +49,7 @@ it('has proper key release relationship', function () {
     ]);
 
     expect($wallet->keyReleases())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
-    
+
     // Create some releases
     KeyRelease::create([
         'wallet_id' => $wallet->id,

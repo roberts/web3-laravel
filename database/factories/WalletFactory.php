@@ -3,9 +3,9 @@
 namespace Roberts\Web3Laravel\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Roberts\Web3Laravel\Enums\WalletType;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Enums\WalletType;
 
 /**
  * @extends Factory<Wallet>

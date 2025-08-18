@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 use Roberts\Web3Laravel\Enums\WalletType;
-use Roberts\Web3Laravel\Models\KeyRelease;
 
 /**
  * @property int $id
@@ -199,7 +198,7 @@ class Wallet extends Model
      */
     public function validatePrivateKeyForType(): void
     {
-        if ($this->key && !$this->canStorePrivateKey()) {
+        if ($this->key && ! $this->canStorePrivateKey()) {
             throw new \InvalidArgumentException(
                 "Private key cannot be stored for {$this->wallet_type->value} wallet type"
             );
@@ -211,12 +210,12 @@ class Wallet extends Model
      */
     public function setPrivateKey(?string $key): void
     {
-        if ($key && !$this->canStorePrivateKey()) {
+        if ($key && ! $this->canStorePrivateKey()) {
             throw new \InvalidArgumentException(
                 "Cannot set private key for {$this->wallet_type->value} wallet type"
             );
         }
-        
+
         $this->key = $key;
     }
 
@@ -230,7 +229,7 @@ class Wallet extends Model
         $keyReleaseService = app(\Roberts\Web3Laravel\Services\KeyReleaseService::class);
         $user = $user ?? Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             throw new \InvalidArgumentException('User must be provided or authenticated');
         }
 
@@ -245,12 +244,12 @@ class Wallet extends Model
         $keyReleaseService = app(\Roberts\Web3Laravel\Services\KeyReleaseService::class);
         $user = $user ?? Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             return [
                 'can_release' => false,
                 'reasons' => ['User must be authenticated'],
                 'wallet_type' => $this->wallet_type->value,
-                'has_private_key' => !is_null($this->key),
+                'has_private_key' => ! is_null($this->key),
             ];
         }
 
@@ -265,7 +264,7 @@ class Wallet extends Model
         $keyReleaseService = app(\Roberts\Web3Laravel\Services\KeyReleaseService::class);
         $user = $user ?? Auth::user();
 
-        if (!$user) {
+        if (! $user) {
             throw new \InvalidArgumentException('User must be provided or authenticated');
         }
 
