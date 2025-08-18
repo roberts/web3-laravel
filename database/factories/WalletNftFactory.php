@@ -17,7 +17,7 @@ class WalletNftFactory extends Factory
     public function definition(): array
     {
         $tokenId = (string) $this->faker->numberBetween(1, 10000);
-        
+
         return [
             'wallet_id' => Wallet::factory(),
             'nft_collection_id' => NftCollection::factory(),
@@ -44,10 +44,10 @@ class WalletNftFactory extends Factory
         for ($i = 0; $i < $traitCount; $i++) {
             $traits[] = [
                 'trait_type' => $this->faker->randomElement([
-                    'Background', 'Eyes', 'Mouth', 'Hat', 'Clothes', 'Accessories'
+                    'Background', 'Eyes', 'Mouth', 'Hat', 'Clothes', 'Accessories',
                 ]),
                 'value' => $this->faker->randomElement([
-                    'Common', 'Rare', 'Epic', 'Legendary', 'Mythic'
+                    'Common', 'Rare', 'Epic', 'Legendary', 'Mythic',
                 ]),
                 'rarity' => $this->faker->randomFloat(4, 0.0001, 0.5),
             ];
@@ -90,6 +90,7 @@ class WalletNftFactory extends Factory
             'rarity_rank' => $this->faker->numberBetween(1, 50),
             'traits' => array_map(function ($trait) {
                 $trait['rarity'] = $this->faker->randomFloat(4, 0.0001, 0.01);
+
                 return $trait;
             }, $attributes['traits'] ?? []),
         ]);
@@ -101,6 +102,7 @@ class WalletNftFactory extends Factory
             'rarity_rank' => $this->faker->numberBetween(500, 1000),
             'traits' => array_map(function ($trait) {
                 $trait['rarity'] = $this->faker->randomFloat(4, 0.1, 0.5);
+
                 return $trait;
             }, $attributes['traits'] ?? []),
         ]);

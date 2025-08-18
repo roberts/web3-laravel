@@ -2,7 +2,6 @@
 
 namespace Roberts\Web3Laravel\Models;
 
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -57,7 +56,7 @@ class WalletNft extends Model
      */
     public function getMetadata(bool $refresh = false): ?array
     {
-        if ($refresh || !$this->metadata) {
+        if ($refresh || ! $this->metadata) {
             // In a real implementation, this would fetch from IPFS/API
             // For now, return cached metadata
         }
@@ -71,6 +70,7 @@ class WalletNft extends Model
     public function getImageUrl(): ?string
     {
         $metadata = $this->getMetadata();
+
         return $metadata['image'] ?? $metadata['image_url'] ?? null;
     }
 
@@ -80,6 +80,7 @@ class WalletNft extends Model
     public function getName(): ?string
     {
         $metadata = $this->getMetadata();
+
         return $metadata['name'] ?? "#{$this->token_id}";
     }
 
@@ -89,6 +90,7 @@ class WalletNft extends Model
     public function getDescription(): ?string
     {
         $metadata = $this->getMetadata();
+
         return $metadata['description'] ?? null;
     }
 
@@ -152,7 +154,7 @@ class WalletNft extends Model
      */
     public function isSemiFungible(): bool
     {
-        return $this->nftCollection->standard->isSemiFungible() && 
+        return $this->nftCollection->standard->isSemiFungible() &&
                bccomp($this->quantity, '1') > 0;
     }
 
@@ -161,7 +163,7 @@ class WalletNft extends Model
      */
     public function canTransferQuantity(string $amount): bool
     {
-        if (!$this->nftCollection->standard->supportsQuantity()) {
+        if (! $this->nftCollection->standard->supportsQuantity()) {
             return $amount === '1' && $this->quantity === '1';
         }
 
@@ -175,7 +177,7 @@ class WalletNft extends Model
     {
         $name = $this->getName();
         $collectionName = $this->nftCollection->name;
-        
+
         return $name ?: "{$collectionName} #{$this->token_id}";
     }
 
@@ -184,6 +186,6 @@ class WalletNft extends Model
      */
     public function needsMetadataRefresh(): bool
     {
-        return !$this->metadata || $this->updated_at->diffInHours(now()) > 24;
+        return ! $this->metadata || $this->updated_at->diffInHours(now()) > 24;
     }
 }

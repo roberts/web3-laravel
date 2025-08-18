@@ -36,13 +36,13 @@ it('creates fungible tokens and nft collections', function () {
     expect($erc721Collection->symbol)->toBe('TNC');
     expect($erc721Collection->supportsSemiFungible())->toBeFalse();
 
-    // Test ERC-1155 NFT Collection  
+    // Test ERC-1155 NFT Collection
     $erc1155Collection = NftCollection::factory()->erc1155()->create([
         'name' => 'Multi Token Collection',
     ]);
     expect($erc1155Collection->standard)->toBe(TokenType::ERC1155);
     expect($erc1155Collection->supportsSemiFungible())->toBeTrue();
-    
+
     // Test NFT ownership
     $wallet = Wallet::factory()->create();
     $nft = WalletNft::factory()->state([

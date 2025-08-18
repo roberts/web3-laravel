@@ -122,8 +122,6 @@ class NftCollection extends Model
 
     /**
      * Get a specific token by ID.
-     *
-     * @return WalletNft|null
      */
     public function getTokenById(string $tokenId): ?WalletNft
     {
@@ -131,7 +129,7 @@ class NftCollection extends Model
         $result = $this->walletNfts()
             ->where('token_id', $tokenId)
             ->first();
-            
+
         return $result;
     }
 

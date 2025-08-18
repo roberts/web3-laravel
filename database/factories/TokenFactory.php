@@ -15,27 +15,27 @@ class TokenFactory extends Factory
 
     public function definition(): array
     {
-        $name = $this->faker->words(2, true) . ' Token';
+        $name = $this->faker->words(2, true).' Token';
         $symbol = strtoupper($this->faker->lexify('???'));
-        
+
         return [
             'contract_id' => Contract::factory(),
             'symbol' => $symbol,
             'name' => $name,
             'decimals' => 18,
-            'total_supply' => (string) $this->faker->numberBetween(1000000, 1000000000) . str_repeat('0', 18),
+            'total_supply' => (string) $this->faker->numberBetween(1000000, 1000000000).str_repeat('0', 18),
             'metadata' => [
                 'icon_url' => $this->faker->imageUrl(64, 64),
                 'description' => $this->faker->sentence(),
                 'website' => $this->faker->url(),
                 'social' => [
-                    'twitter' => '@' . $this->faker->userName(),
-                    'telegram' => 't.me/' . $this->faker->userName(),
-                    'discord' => 'discord.gg/' . $this->faker->lexify('???????'),
+                    'twitter' => '@'.$this->faker->userName(),
+                    'telegram' => 't.me/'.$this->faker->userName(),
+                    'discord' => 'discord.gg/'.$this->faker->lexify('???????'),
                 ],
                 'deployer_metadata' => [
                     'launch_date' => $this->faker->dateTimeThisYear(),
-                    'initial_liquidity' => $this->faker->numberBetween(1, 100) . ' ETH',
+                    'initial_liquidity' => $this->faker->numberBetween(1, 100).' ETH',
                     'platform' => 'Web3Laravel Deployer',
                 ],
             ],

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->decimal('floor_price', 78, 0)->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            
+
             $table->unique('contract_id');
             $table->index('standard');
             $table->index('name');

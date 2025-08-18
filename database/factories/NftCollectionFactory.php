@@ -18,7 +18,7 @@ class NftCollectionFactory extends Factory
     {
         return [
             'contract_id' => Contract::factory(),
-            'name' => $this->faker->words(3, true) . ' Collection',
+            'name' => $this->faker->words(3, true).' Collection',
             'symbol' => strtoupper($this->faker->lexify('???')),
             'description' => $this->faker->text(),
             'image_url' => $this->faker->imageUrl(400, 400),

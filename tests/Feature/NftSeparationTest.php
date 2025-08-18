@@ -1,10 +1,10 @@
 <?php
 
+use Roberts\Web3Laravel\Enums\TokenType;
 use Roberts\Web3Laravel\Models\NftCollection;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Models\WalletNft;
-use Roberts\Web3Laravel\Enums\TokenType;
 
 it('can create and use fungible token model', function () {
     $token = Token::factory()->create([
@@ -19,7 +19,7 @@ it('can create and use fungible token model', function () {
     expect($token->decimals)->toBe(18);
     expect($token->getDisplayName())->toBe('Test Token');
     expect($token->hasCompleteMetadata())->toBeTrue();
-    
+
     // Test amount formatting
     expect($token->formatAmount('1000000000000000000'))->toBe('1');
     expect($token->parseAmount('1.5'))->toBe('1500000000000000000');
@@ -43,7 +43,7 @@ it('can create and use nft collection model', function () {
 it('can create nft ownership records', function () {
     $wallet = Wallet::factory()->create();
     $collection = NftCollection::factory()->erc721()->create();
-    
+
     $nft = WalletNft::factory()
         ->for($wallet)
         ->for($collection)
@@ -62,7 +62,7 @@ it('can create nft ownership records', function () {
 it('handles erc1155 semi-fungible tokens', function () {
     $collection = NftCollection::factory()->erc1155()->create();
     $wallet = Wallet::factory()->create();
-    
+
     $nft = WalletNft::factory()->erc1155()->create([
         'wallet_id' => $wallet->id,
         'nft_collection_id' => $collection->id,
@@ -82,7 +82,7 @@ it('wallet has nft relationships and helper methods', function () {
     $wallet = Wallet::factory()->create();
     $collection1 = NftCollection::factory()->create();
     $collection2 = NftCollection::factory()->create();
-    
+
     // Create NFTs with specific token IDs
     WalletNft::factory()
         ->for($wallet)
@@ -113,7 +113,7 @@ it('wallet has nft relationships and helper methods', function () {
     expect($wallet->getUniqueCollectionCount())->toBe(2);
     expect($wallet->ownsNft($collection1, '123'))->toBeTrue();
     expect($wallet->ownsNft($collection1, '999'))->toBeFalse();
-    
+
     $gallery = $wallet->getNftGallery();
     expect($gallery)->toHaveCount(3);
 });
@@ -122,7 +122,7 @@ it('nft collection has analytics methods', function () {
     $collection = NftCollection::factory()->create();
     $wallet1 = Wallet::factory()->create();
     $wallet2 = Wallet::factory()->create();
-    
+
     // Wallet1 owns 2 NFTs
     WalletNft::factory()->create([
         'wallet_id' => $wallet1->id,
@@ -130,14 +130,14 @@ it('nft collection has analytics methods', function () {
         'token_id' => '1',
         'rarity_rank' => 1,
     ]);
-    
+
     WalletNft::factory()->create([
         'wallet_id' => $wallet1->id,
         'nft_collection_id' => $collection->id,
         'token_id' => '2',
         'rarity_rank' => 2,
     ]);
-    
+
     // Wallet2 owns 1 NFT
     WalletNft::factory()->create([
         'wallet_id' => $wallet2->id,
@@ -148,11 +148,11 @@ it('nft collection has analytics methods', function () {
 
     expect($collection->getOwnerCount())->toBe(2);
     expect($collection->getUniqueTokenCount())->toBe(3);
-    
+
     $ownerDistribution = $collection->getOwnerDistribution();
     expect($ownerDistribution[$wallet1->id])->toBe(2);
     expect($ownerDistribution[$wallet2->id])->toBe(1);
-    
+
     $rarityRanking = $collection->getRarityRanking();
     expect($rarityRanking)->toHaveCount(3);
     expect($rarityRanking->first()->rarity_rank)->toBe(1);

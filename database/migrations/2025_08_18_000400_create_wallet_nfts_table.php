@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedInteger('rarity_rank')->nullable();
             $table->timestamp('acquired_at')->nullable();
             $table->timestamps();
-            
+
             $table->unique(['wallet_id', 'nft_collection_id', 'token_id'], 'wallet_nft_token_unique');
             $table->index('wallet_id');
             $table->index('nft_collection_id');

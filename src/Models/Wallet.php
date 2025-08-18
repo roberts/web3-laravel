@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 use Roberts\Web3Laravel\Enums\WalletType;
-use Roberts\Web3Laravel\Models\KeyRelease;
 
 /**
  * @property int $id

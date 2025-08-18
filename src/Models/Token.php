@@ -2,7 +2,6 @@
 
 namespace Roberts\Web3Laravel\Models;
 
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +10,7 @@ use Roberts\Web3Laravel\Services\TokenService;
 
 /**
  * Represents fungible tokens (ERC-20 only)
- * 
+ *
  * @property int $id
  * @property int $contract_id
  * @property string $symbol
@@ -61,6 +60,7 @@ class Token extends Model
     public function getBalance(string $walletAddress): string
     {
         $service = app(TokenService::class);
+
         return $service->balanceOf($this, $walletAddress);
     }
 
@@ -148,13 +148,14 @@ class Token extends Model
         if ($length <= $decimals) {
             $padded = str_pad($rawAmount, $decimals, '0', STR_PAD_LEFT);
             $trimmed = rtrim($padded, '0');
-            return $trimmed ? '0.' . $trimmed : '0';
+
+            return $trimmed ? '0.'.$trimmed : '0';
         }
 
         $wholePart = substr($rawAmount, 0, $length - $decimals);
         $decimalPart = rtrim(substr($rawAmount, $length - $decimals), '0');
-        
-        return $decimalPart ? $wholePart . '.' . $decimalPart : $wholePart;
+
+        return $decimalPart ? $wholePart.'.'.$decimalPart : $wholePart;
     }
 
     /**
@@ -162,7 +163,7 @@ class Token extends Model
      */
     public function parseAmount(string $formattedAmount): string
     {
-        if (!str_contains($formattedAmount, '.')) {
+        if (! str_contains($formattedAmount, '.')) {
             return bcmul($formattedAmount, bcpow('10', (string) $this->decimals));
         }
 
@@ -175,7 +176,7 @@ class Token extends Model
             return $decimal;
         }
 
-        return $whole . $decimal;
+        return $whole.$decimal;
     }
 
     /**
@@ -183,7 +184,7 @@ class Token extends Model
      */
     public function hasCompleteMetadata(): bool
     {
-        return !empty($this->name) && !empty($this->symbol) && isset($this->decimals);
+        return ! empty($this->name) && ! empty($this->symbol) && isset($this->decimals);
     }
 
     /**
