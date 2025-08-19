@@ -97,20 +97,20 @@ class WalletTokenService
      */
     public function snapshotAllowance(Token $token, Wallet $owner, string $spender): string
     {
-    /** @var ProtocolRouter $router */
-    $router = app(ProtocolRouter::class);
-    $adapter = $router->for($owner->protocol);
-    $spenderNormalized = $adapter->normalizeAddress($spender);
-    $current = $this->balanceService->allowance($token, $owner->address, $spenderNormalized, $owner);
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($owner->protocol);
+        $spenderNormalized = $adapter->normalizeAddress($spender);
+        $current = $this->balanceService->allowance($token, $owner->address, $spenderNormalized, $owner);
 
-    $meta = ['spender' => $spenderNormalized];
+        $meta = ['spender' => $spenderNormalized];
 
         $row = WalletToken::firstOrCreate(
             ['wallet_id' => $owner->id, 'token_id' => $token->id],
             ['balance' => '0']
         );
 
-    $old = (string) ($row->meta['allowances'][$meta['spender']] ?? '0');
+        $old = (string) ($row->meta['allowances'][$meta['spender']] ?? '0');
 
         if ($old !== (string) $current) {
             $row->meta = array_replace_recursive($row->meta ?? [], [

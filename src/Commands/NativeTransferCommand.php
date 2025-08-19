@@ -9,6 +9,7 @@ use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 class NativeTransferCommand extends Command
 {
     protected $signature = 'web3:native:transfer {from_wallet_id} {to_address} {amount}';
+
     protected $description = 'Transfer native currency (ETH/SOL, etc.) using the protocol adapter';
 
     public function handle(): int
@@ -23,6 +24,7 @@ class NativeTransferCommand extends Command
 
         $sig = $adapter->transferNative($from, $to, $amount);
         $this->info("Submitted: {$sig}");
+
         return self::SUCCESS;
     }
 }

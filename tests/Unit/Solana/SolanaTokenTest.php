@@ -53,7 +53,7 @@ it('parses and sums token balances from getTokenAccountsByOwner', function () {
         ], 200),
     ]);
 
-    $pool = new Pool([ new Endpoint('https://api.mainnet-beta.solana.com', 1, []) ]);
+    $pool = new Pool([new Endpoint('https://api.mainnet-beta.solana.com', 1, [])]);
     $client = new SolanaJsonRpcClient(new PooledHttpClient($pool));
 
     $resp = $client->getTokenAccountsByOwner('Owner1111111111111111111111111111111111111', ['programId' => SplToken::TOKEN_PROGRAM_ID]);

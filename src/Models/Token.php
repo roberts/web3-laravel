@@ -72,13 +72,15 @@ class Token extends Model
     public function getBalance(string $walletAddress): string
     {
         // Chain-agnostic path requires a wallet context; fallback to EVM path if no wallet found
-    $wallet = Wallet::query()->byAddress($walletAddress)->first();
+        $wallet = Wallet::query()->byAddress($walletAddress)->first();
         if ($wallet) {
             $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
+
             return $svc->token($this, $wallet);
         }
         // Fallback: legacy EVM balance if wallet context not available
         $service = app(TokenService::class);
+
         return $service->balanceOf($this, $walletAddress);
     }
 
@@ -88,6 +90,7 @@ class Token extends Model
     public function getWalletBalance(Wallet $wallet): string
     {
         $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
+
         return $svc->token($this, $wallet);
     }
 
@@ -250,12 +253,14 @@ class Token extends Model
     public function allowance(string $owner, string $spender): string
     {
         // Try to infer wallet protocol from owner, else fallback to EVM service
-    $wallet = Wallet::query()->byAddress($owner)->first();
+        $wallet = Wallet::query()->byAddress($owner)->first();
         if ($wallet) {
             $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
+
             return $svc->allowance($this, $owner, $spender, $wallet);
         }
         $service = app(TokenService::class);
+
         return $service->allowance($this, $owner, $spender);
     }
 }

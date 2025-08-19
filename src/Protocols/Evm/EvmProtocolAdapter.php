@@ -76,12 +76,14 @@ class EvmProtocolAdapter implements ProtocolAdapter
     {
         // Reuse existing ERC-20 path for EVM
         $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+
         return $svc->balanceOf($token, $ownerAddress);
     }
 
     public function allowance(\Roberts\Web3Laravel\Models\Token $token, string $ownerAddress, string $spenderAddress): string
     {
         $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+
         return $svc->allowance($token, $ownerAddress, $spenderAddress);
     }
 

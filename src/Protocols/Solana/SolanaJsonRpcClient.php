@@ -36,13 +36,14 @@ class SolanaJsonRpcClient
     {
         return $this->rpc->call('getTransaction', [$signature, ['maxSupportedTransactionVersion' => 0]]);
     }
-    
+
     public function getTokenAccountsByOwner(string $owner, array $filterOrProgram, bool $parsed = true): array
     {
         $opts = ['commitment' => 'confirmed'];
         if ($parsed) {
             $opts['encoding'] = 'jsonParsed';
         }
+
         return $this->rpc->call('getTokenAccountsByOwner', [$owner, $filterOrProgram, $opts]);
     }
 }

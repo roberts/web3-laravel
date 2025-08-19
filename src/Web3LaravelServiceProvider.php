@@ -8,15 +8,15 @@ use Roberts\Web3Laravel\Core\Provider\Pool as ProviderPool;
 use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
-use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\ProtocolRouter;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
-use Roberts\Web3Laravel\Protocols\Solana\SolanaSigner;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaService as ProtocolSolanaService;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaSigner;
+use Roberts\Web3Laravel\Services\BalanceService;
 use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
-use Roberts\Web3Laravel\Services\BalanceService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
 use Spatie\LaravelPackageTools\Package;
@@ -84,7 +84,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             return new KeyReleaseService;
         });
 
-    // SolanaService removed in favor of protocol adapter usage
+        // SolanaService removed in favor of protocol adapter usage
 
         $this->app->singleton(BalanceService::class, function ($app) {
             return new BalanceService($app->make(\Roberts\Web3Laravel\Protocols\ProtocolRouter::class));
@@ -97,7 +97,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         // Solana protocol adapter
         $this->app->singleton(SolanaSigner::class, function ($app) {
-            return new SolanaSigner();
+            return new SolanaSigner;
         });
 
         $this->app->singleton(SolanaProtocolAdapter::class, function ($app) {
@@ -153,9 +153,10 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         // Protocol router to dispatch to the right adapter
         $this->app->singleton(ProtocolRouter::class, function ($app) {
-            $router = new ProtocolRouter();
+            $router = new ProtocolRouter;
             $router->register($app->make(EvmProtocolAdapter::class));
             $router->register($app->make(SolanaProtocolAdapter::class));
+
             return $router;
         });
 

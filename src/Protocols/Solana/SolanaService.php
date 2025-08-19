@@ -3,10 +3,10 @@
 namespace Roberts\Web3Laravel\Protocols\Solana;
 
 use Illuminate\Database\Eloquent\Model;
+use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\ProtocolRouter;
-use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 
 /**
  * Protocol-scoped Solana service that forwards to the SolanaProtocolAdapter.
@@ -20,6 +20,7 @@ class SolanaService
     {
         /** @var SolanaProtocolAdapter $adapter */
         $adapter = $this->router->for(BlockchainProtocol::SOLANA);
+
         return $adapter;
     }
 

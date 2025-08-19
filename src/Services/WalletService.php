@@ -16,7 +16,7 @@ class WalletService
         /** @var ProtocolRouter $router */
         $router = app(ProtocolRouter::class);
 
-    $protocol = $blockchain->protocol ?? BlockchainProtocol::EVM;
+        $protocol = $blockchain->protocol ?? BlockchainProtocol::EVM;
         $adapter = $router->for($protocol);
 
         return $adapter->createWallet($attributes, $owner, $blockchain);
@@ -28,11 +28,11 @@ class WalletService
      */
     public function createForBlockchain(Blockchain $blockchain, array $attributes = [], ?Model $owner = null): Wallet
     {
-    /** @var ProtocolRouter $router */
-    $router = app(ProtocolRouter::class);
-    $adapter = $router->for($blockchain->protocol);
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($blockchain->protocol);
 
-    return $adapter->createWallet($attributes, $owner, $blockchain);
+        return $adapter->createWallet($attributes, $owner, $blockchain);
     }
 
     /**
@@ -48,10 +48,10 @@ class WalletService
     /** Create a wallet by protocol, choosing defaults for each chain family. */
     public function createForProtocol(BlockchainProtocol $protocol, array $attributes = [], ?Model $owner = null): Wallet
     {
-    /** @var ProtocolRouter $router */
-    $router = app(ProtocolRouter::class);
-    $adapter = $router->for($protocol);
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($protocol);
 
-    return $adapter->createWallet($attributes, $owner, null);
+        return $adapter->createWallet($attributes, $owner, null);
     }
 }

@@ -116,9 +116,10 @@ class Wallet extends Model
      */
     public function allowance(Token $token, string $spender): string
     {
-    /** @var \Roberts\Web3Laravel\Services\BalanceService $svc */
-    $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
-    return $svc->allowance($token, $this->address, $spender, $this);
+        /** @var \Roberts\Web3Laravel\Services\BalanceService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
+
+        return $svc->allowance($token, $this->address, $spender, $this);
     }
 
     /**

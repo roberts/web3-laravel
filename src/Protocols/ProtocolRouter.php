@@ -18,9 +18,10 @@ class ProtocolRouter
     public function for(BlockchainProtocol $protocol): ProtocolAdapter
     {
         $key = $protocol->value;
-        if (!isset($this->adapters[$key])) {
+        if (! isset($this->adapters[$key])) {
             throw new \InvalidArgumentException("No adapter registered for protocol {$key}");
         }
+
         return $this->adapters[$key];
     }
 }

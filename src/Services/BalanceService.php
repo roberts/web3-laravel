@@ -14,6 +14,7 @@ class BalanceService
     public function native(Wallet $wallet): string
     {
         $adapter = $this->router->for($wallet->protocol);
+
         return $adapter->getNativeBalance($wallet);
     }
 
@@ -21,6 +22,7 @@ class BalanceService
     public function token(Token $token, Wallet $wallet): string
     {
         $adapter = $this->router->for($wallet->protocol);
+
         return $adapter->getTokenBalance($token, $wallet->address);
     }
 
@@ -28,6 +30,7 @@ class BalanceService
     public function allowance(Token $token, string $ownerAddress, string $spenderAddress, Wallet $contextWallet): string
     {
         $adapter = $this->router->for($contextWallet->protocol);
+
         return $adapter->allowance($token, $ownerAddress, $spenderAddress);
     }
 }

@@ -13,7 +13,7 @@ class SplToken
         $value = $rpcResponse['value'] ?? [];
         foreach ($value as $acc) {
             $info = $acc['account']['data']['parsed']['info'] ?? null;
-            if (!$info) {
+            if (! $info) {
                 continue;
             }
             if ($mint && ($info['mint'] ?? '') !== $mint) {
@@ -22,6 +22,7 @@ class SplToken
             $amount = (int) (($info['tokenAmount']['amount'] ?? '0'));
             $sum += $amount;
         }
+
         return (string) $sum;
     }
 }

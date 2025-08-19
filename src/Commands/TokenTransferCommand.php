@@ -5,8 +5,8 @@ namespace Roberts\Web3Laravel\Commands;
 use Illuminate\Console\Command;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Protocols\ProtocolRouter;
+use Roberts\Web3Laravel\Services\TokenService;
 
 class TokenTransferCommand extends Command
 {
@@ -51,6 +51,7 @@ class TokenTransferCommand extends Command
         $adapter = $router->for($wallet->protocol);
         if (! $adapter->validateAddress($to)) {
             $this->error("Invalid recipient address for protocol {$wallet->protocol->value}: {$to}");
+
             return self::FAILURE;
         }
         $toNormalized = $adapter->normalizeAddress($to);

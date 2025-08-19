@@ -8,7 +8,6 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
-use Roberts\Web3Laravel\Protocols\Solana\SplToken;
 use Tuupola\Base58;
 
 class SolanaProtocolAdapter implements ProtocolAdapter
@@ -89,31 +88,31 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         }
 
         // Build a legacy (v0) transfer message
-    $lamportsLe = $this->encodeU64Le($amount);
-        $instructionData = \pack('V', 2) . $lamportsLe; // SystemInstruction::Transfer (2) + lamports u64 LE
+        $lamportsLe = $this->encodeU64Le($amount);
+        $instructionData = \pack('V', 2).$lamportsLe; // SystemInstruction::Transfer (2) + lamports u64 LE
 
         // Accounts vector: [from (signer,writable), to (writable), program id]
         $accounts = [$fromPub, $toPub, $programPub];
         $programIndex = 2; // index in $accounts
 
         // Header: numRequiredSignatures, numReadonlySigned, numReadonlyUnsigned
-        $header = \chr(1) . \chr(0) . \chr(1); // 1 signer, 0 ro signed, 1 ro unsigned (program id)
+        $header = \chr(1).\chr(0).\chr(1); // 1 signer, 0 ro signed, 1 ro unsigned (program id)
 
         // Account addresses (shortvec length + concat 32-byte pubkeys)
-    $acctSection = $this->shortvec(count($accounts)) . implode('', $accounts);
+        $acctSection = $this->shortvec(count($accounts)).implode('', $accounts);
 
         // Compiled instruction
         $acctIdxs = [0, 1];
         $ci = \chr($programIndex)
-            . $this->shortvec(count($acctIdxs))
-            . implode('', array_map(fn ($i) => \chr($i), $acctIdxs))
-            . $this->shortvec(strlen($instructionData))
-            . $instructionData;
+            .$this->shortvec(count($acctIdxs))
+            .implode('', array_map(fn ($i) => \chr($i), $acctIdxs))
+            .$this->shortvec(strlen($instructionData))
+            .$instructionData;
 
-    $ixSection = $this->shortvec(1) . $ci;
+        $ixSection = $this->shortvec(1).$ci;
 
         // Message is header + account keys + recent blockhash + instructions
-        $message = $header . $acctSection . $recentBlockhash . $ixSection;
+        $message = $header.$acctSection.$recentBlockhash.$ixSection;
 
         // Sign the message and build the transaction (signatures vec + message)
         $signature = $this->signer->sign($message, $secretKey);
@@ -121,12 +120,11 @@ class SolanaProtocolAdapter implements ProtocolAdapter
             throw new \RuntimeException('Invalid signature length');
         }
 
-    $tx = $this->shortvec(1) . $signature . $message;
+        $tx = $this->shortvec(1).$signature.$message;
         $base64 = base64_encode($tx);
 
         return $this->rpc->sendTransaction($base64);
     }
-
 
     public function normalizeAddress(string $address): string
     {
@@ -144,21 +142,23 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         } catch (\Throwable $e) {
             return false;
         }
+
         return strlen($decoded) === 32;
     }
-    
+
     public function getTokenBalance(\Roberts\Web3Laravel\Models\Token $token, string $ownerAddress): string
     {
         // For Solana, Token model is ERC-20-centric; best effort: sum SPL token accounts by mint if token has contract address stored as mint.
-    $mint = $token->contract->address; // Treat contract address as SPL mint when protocol is Solana
+        $mint = $token->contract->address; // Treat contract address as SPL mint when protocol is Solana
         $filter = $mint ? ['mint' => $mint] : ['programId' => SplToken::TOKEN_PROGRAM_ID];
         $resp = $this->rpc->getTokenAccountsByOwner($ownerAddress, $filter, true);
+
         return SplToken::sumParsedTokenBalance($resp, $mint);
     }
-    
+
     public function allowance(\Roberts\Web3Laravel\Models\Token $token, string $ownerAddress, string $spenderAddress): string
     {
-    $mint = $token->contract->address;
+        $mint = $token->contract->address;
         if (! is_string($mint) || $mint === '') {
             return '0';
         }
@@ -166,7 +166,9 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         $value = $resp['value'] ?? [];
         foreach ($value as $acc) {
             $info = $acc['account']['data']['parsed']['info'] ?? null;
-            if (! $info) { continue; }
+            if (! $info) {
+                continue;
+            }
             $delegate = $info['delegate'] ?? null;
             $delegated = $info['delegatedAmount']['amount'] ?? null;
             if (is_string($delegate) && $delegate !== '' && is_string($delegated)) {
@@ -175,6 +177,7 @@ class SolanaProtocolAdapter implements ProtocolAdapter
                 }
             }
         }
+
         return '0';
     }
 
@@ -185,7 +188,7 @@ class SolanaProtocolAdapter implements ProtocolAdapter
             throw new \RuntimeException('ext-sodium is required for Solana signing');
         }
 
-    $mint = $token->contract->address;
+        $mint = $token->contract->address;
         if (! is_string($mint) || $mint === '') {
             throw new \InvalidArgumentException('Token mint (contract address) is required for SPL transfers');
         }
@@ -247,10 +250,10 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         // Header: 1 signer (owner), 0 readonly signed, 2 readonly unsigned (mint, token program)
         $header = chr(1).chr(0).chr(2);
 
-    // Account keys: [owner, owner_ata, mint, dest_ata, token_program]
+        // Account keys: [owner, owner_ata, mint, dest_ata, token_program]
         // Ensure unique order for program index referencing; we’ll set program index as the last element
-    $accountKeys = [ $ownerPub, $ownerAta, $mintPub, $toAta, $tokenProgramPub ];
-        $acctSection = $this->shortvec(count($accountKeys)) . implode('', $accountKeys);
+        $accountKeys = [$ownerPub, $ownerAta, $mintPub, $toAta, $tokenProgramPub];
+        $acctSection = $this->shortvec(count($accountKeys)).implode('', $accountKeys);
 
         // Program index in account keys
         $programIndex = 4;
@@ -258,30 +261,32 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         // Accounts for instruction are indices into account keys
         $acctIdxs = [1, 2, 3, 0]; // source, mint, destination, owner
         $ci = chr($programIndex)
-            . $this->shortvec(count($acctIdxs))
-            . implode('', array_map(fn ($i) => chr($i), $acctIdxs))
-            . $this->shortvec(strlen($ixData))
-            . $ixData;
+            .$this->shortvec(count($acctIdxs))
+            .implode('', array_map(fn ($i) => chr($i), $acctIdxs))
+            .$this->shortvec(strlen($ixData))
+            .$ixData;
 
-        $ixSection = $this->shortvec(1) . $ci;
+        $ixSection = $this->shortvec(1).$ci;
 
-        $message = $header . $acctSection . $recentBlockhash . $ixSection;
+        $message = $header.$acctSection.$recentBlockhash.$ixSection;
 
         // Sign and submit
         $signature = $this->signer->sign($message, $secretKey);
         if (strlen($signature) !== 64) {
             throw new \RuntimeException('Invalid signature length');
         }
-        $tx = $this->shortvec(1) . $signature . $message;
+        $tx = $this->shortvec(1).$signature.$message;
         $base64 = base64_encode($tx);
+
         return $this->rpc->sendTransaction($base64);
     }
+
     /** Shortvec (compact-u16) length encoding used by Solana. */
     private function shortvec(int $n): string
     {
         $out = '';
         while (true) {
-            $byte = $n & 0x7f;
+            $byte = $n & 0x7F;
             $n >>= 7;
             if ($n === 0) {
                 $out .= chr($byte);
@@ -290,15 +295,17 @@ class SolanaProtocolAdapter implements ProtocolAdapter
                 $out .= chr($byte | 0x80);
             }
         }
+
         return $out;
     }
 
     /** Encode a decimal string as 8-byte little-endian u64 using GMP. */
     private function encodeU64Le(string $dec): string
     {
-    $n = gmp_init($dec, 10);
-    $be = (string) gmp_export($n, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
+        $n = gmp_init($dec, 10);
+        $be = (string) gmp_export($n, 1, GMP_MSW_FIRST | GMP_BIG_ENDIAN);
         $be = str_pad($be, 8, "\x00", STR_PAD_LEFT);
+
         return strrev($be);
     }
 
@@ -307,7 +314,7 @@ class SolanaProtocolAdapter implements ProtocolAdapter
     {
         $resp = $this->rpc->getTokenAccountsByOwner($ownerAddress, ['mint' => $mintAddress], true);
         $value = $resp['value'] ?? [];
-        if (!empty($value)) {
+        if (! empty($value)) {
             $pubkey = $value[0]['pubkey'] ?? null;
             if (is_string($pubkey) && $pubkey !== '') {
                 $b58 = new Base58(['characters' => Base58::BITCOIN]);
@@ -317,6 +324,7 @@ class SolanaProtocolAdapter implements ProtocolAdapter
                 }
             }
         }
+
         return null;
     }
 }
