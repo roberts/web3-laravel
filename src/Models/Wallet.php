@@ -191,7 +191,7 @@ class Wallet extends Model
         }
         // Only checksum EVM addresses; return raw for others (e.g., Solana base58)
         try {
-            return $this->protocol?->isEvm() ? Address::toChecksum($value) : $value;
+            return $this->protocol->isEvm() ? Address::toChecksum($value) : $value;
         } catch (\Throwable $e) {
             // If protocol not yet set/loaded, default to raw value to avoid corrupting display
             return $value;
