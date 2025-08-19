@@ -55,7 +55,44 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 
     public function transferNative(Wallet $from, string $toAddress, string $amount): string
     {
-        throw new \RuntimeException('Not implemented');
+        if (! extension_loaded('sodium')) {
+            throw new \RuntimeException('ext-sodium required for Sui signing');
+        }
+        // Choose a coin for spending and build tx via RPC helper
+        $coins = $this->rpc->getCoins($from->address)['data'] ?? [];
+        if (empty($coins)) {
+            throw new \RuntimeException('No SUI coins available to cover transfer');
+        }
+        $coinId = (string) ($coins[0]['coinObjectId'] ?? '');
+        if ($coinId === '') {
+            throw new \RuntimeException('Invalid SUI coin reference');
+        }
+        $gasPrice = $this->rpc->getReferenceGasPrice();
+        // choose a conservative gas budget
+        $gasBudget = max(1000, (int) ($gasPrice * 10));
+
+        $build = $this->rpc->transferSui($from->address, $coinId, $toAddress, (int) $amount, (int) $gasBudget);
+        $txBytes = (string) (data_get($build, 'txBytes') ?? '');
+        if ($txBytes === '') {
+            throw new \RuntimeException('Sui transferSui did not return txBytes');
+        }
+
+        // Sign and execute
+        $secretHex = Crypt::decryptString($from->key);
+        $secret = hex2bin($secretHex);
+        if ($secret === false) {
+            throw new \RuntimeException('Invalid Sui secret key encoding');
+        }
+        $sig = sodium_crypto_sign_detached(base64_decode($txBytes), $secret);
+        $sigBase64 = base64_encode("\x00".$sig); // ed25519 flag
+
+        $res = $this->rpc->executeTransactionBlock($txBytes, [$sigBase64]);
+        $digest = (string) (data_get($res, 'digest') ?? '');
+        if ($digest === '') {
+            throw new \RuntimeException('Sui executeTransactionBlock failed');
+        }
+
+        return $digest;
     }
 
     public function normalizeAddress(string $address): string
@@ -124,29 +161,28 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         if ($to === '' || $amountStr === '') {
             throw new \InvalidArgumentException('Sui transaction requires destination and amount (MIST)');
         }
-        // Use first available coin as input; a full implementation would split/merge as needed
+        // Build txBytes via RPC helper when not provided in meta
         $coins = (array) (($tx->meta['sui']['coins'] ?? []) ?: []);
         if (empty($coins)) {
-            // fetch if not present
             $coins = $this->rpc->getCoins($wallet->address)['data'] ?? [];
         }
         if (empty($coins)) {
             throw new \RuntimeException('No SUI coins available to cover transfer');
         }
-        $coin = $coins[0];
-        $coinRef = $coin['coinObjectId'] ?? $coin['coinObjectId'] ?? null;
-        if (! is_string($coinRef) || $coinRef === '') {
-            throw new \RuntimeException('Invalid SUI coin reference');
+        $coinId = (string) ($coins[0]['coinObjectId'] ?? '');
+        $gasPrice = $this->rpc->getReferenceGasPrice();
+        $gasBudget = max(1000, (int) ($gasPrice * 10));
+
+        $txBytes = (string) (data_get($tx->meta, 'sui.txBytes') ?? '');
+        if ($txBytes === '') {
+            $build = $this->rpc->transferSui($wallet->address, $coinId, $to, (int) $amountStr, (int) $gasBudget);
+            $txBytes = (string) (data_get($build, 'txBytes') ?? '');
+            if ($txBytes === '') {
+                throw new \RuntimeException('Sui transferSui did not return txBytes');
+            }
         }
 
-        // Build a minimal programmable transaction bytes (simplified). In practice, use Sui SDK to build BCS bytes.
-        // Here we assume txBytes are provided via meta for advanced flows; otherwise abort to avoid malformed txs.
-        $txBytes = $tx->meta['sui']['txBytes'] ?? null;
-        if (! is_string($txBytes) || $txBytes === '') {
-            throw new \RuntimeException('Sui txBytes missing; building raw BCS not implemented in this package');
-        }
-
-        // Sign txBytes with ed25519
+        // Sign & execute as above
         if (! extension_loaded('sodium')) {
             throw new \RuntimeException('ext-sodium required for Sui signing');
         }
@@ -156,8 +192,7 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
             throw new \RuntimeException('Invalid Sui secret key encoding');
         }
         $sig = sodium_crypto_sign_detached(base64_decode($txBytes), $secret);
-        $sigBase64 = base64_encode("\x00".$sig); // 0x00 = ed25519 scheme flag
-
+        $sigBase64 = base64_encode("\x00".$sig);
         $res = $this->rpc->executeTransactionBlock($txBytes, [$sigBase64]);
         $digest = (string) (data_get($res, 'digest') ?? '');
         if ($digest === '') {

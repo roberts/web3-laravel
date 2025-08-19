@@ -13,7 +13,7 @@ use Roberts\Web3Laravel\Support\Address;
 use Roberts\Web3Laravel\Support\Hex;
 use Roberts\Web3Laravel\Support\Keccak;
 
-class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
+class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter, \Roberts\Web3Laravel\Protocols\Contracts\HasSequence
 {
     public function __construct(private EvmClientInterface $evm) {}
 
@@ -59,8 +59,22 @@ class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 
     public function transferNative(Wallet $from, string $toAddress, string $amount): string
     {
-        // Leave EVM transfer to TransactionService in current codebase; not implemented here yet.
-        throw new \RuntimeException('transferNative not implemented via adapter for EVM');
+        // Delegate to TransactionService raw send for a simple value transfer
+        $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
+        $payload = [
+            'to' => Address::normalize($toAddress),
+            // Amount is provided as decimal base units; convert to 0x quantity
+            'value' => Hex::toHex($amount, true),
+            'gas' => 21000,
+        ];
+        try {
+            $gp = $this->evm->gasPrice();
+            $payload['gasPrice'] = is_string($gp) ? $gp : Hex::toHex((int) $gp, true);
+        } catch (\Throwable) {
+            // fallback: let TransactionService pick defaults
+        }
+
+        return $svc->sendRaw($from, $payload);
     }
 
     public function normalizeAddress(string $address): string
@@ -188,5 +202,15 @@ class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         }
 
         return (int) $v;
+    }
+
+    // Optional capability: account nonce
+    public function sequence(Wallet $wallet): int|string|null
+    {
+        try {
+            return $this->evm->getTransactionCount($wallet->address, 'pending');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

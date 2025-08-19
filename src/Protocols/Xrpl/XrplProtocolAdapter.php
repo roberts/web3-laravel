@@ -11,7 +11,7 @@ use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
-class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
+class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter, \Roberts\Web3Laravel\Protocols\Contracts\HasSequence
 {
     public function __construct(private KeyEngineInterface $keys, private XrplJsonRpcClient $rpc) {}
 
@@ -48,7 +48,14 @@ class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 
     public function getNativeBalance(Wallet $wallet): string
     {
-        return '0';
+        try {
+            $info = $this->rpc->accountInfo($wallet->address);
+            $bal = (string) (data_get($info, 'account_data.Balance') ?? '0');
+
+            return $bal;
+        } catch (\Throwable) {
+            return '0';
+        }
     }
 
     public function transferNative(Wallet $from, string $toAddress, string $amount): string
@@ -185,6 +192,18 @@ class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
             ];
         } catch (\Throwable) {
             return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
+        }
+    }
+
+    // Optional capability: account sequence
+    public function sequence(Wallet $wallet): int|string|null
+    {
+        try {
+            $info = $this->rpc->accountInfo($wallet->address);
+
+            return (int) (data_get($info, 'account_data.Sequence') ?? 0);
+        } catch (\Throwable) {
+            return null;
         }
     }
 }

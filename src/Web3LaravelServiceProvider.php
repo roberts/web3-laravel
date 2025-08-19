@@ -31,6 +31,7 @@ use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 use Roberts\Web3Laravel\Services\Keys\NativeKeyEngine;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
+use Roberts\Web3Laravel\Services\SequenceService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -84,6 +85,10 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 $app->make(ContractCaller::class),
                 $app->make(TransactionService::class)
             );
+        });
+
+        $this->app->singleton(SequenceService::class, function ($app) {
+            return new SequenceService;
         });
 
         $this->app->singleton(\Roberts\Web3Laravel\Services\WalletTokenService::class, function ($app) {

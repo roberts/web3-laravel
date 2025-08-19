@@ -42,7 +42,17 @@ trait InteractsWithWeb3
     // Eloquent-style alias
     public function nonce(string $blockTag = 'latest'): string
     {
+        // Backwards-compat EVM alias; for other protocols prefer sequence()
         return $this->getTransactionCount($blockTag);
+    }
+
+    /** XRPL/Solana-style sequence helper (EVM returns hex nonce). */
+    public function sequence(): int|string|null
+    {
+        /** @var \Roberts\Web3Laravel\Services\SequenceService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\SequenceService::class);
+
+        return $svc->current($this);
     }
 
     public function getGasPrice(): string
@@ -99,7 +109,7 @@ trait InteractsWithWeb3
             'gwei' => $tx['gasPrice'] ?? null,
             'fee_max' => $tx['maxFeePerGas'] ?? null,
             'priority_max' => $tx['maxPriorityFeePerGas'] ?? null,
-            'is_1559' => $tx['type'] === 2 || isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) ? true : null,
+            'is_1559' => (($tx['type'] ?? null) === 2) || isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) ? true : null,
             'nonce' => $tx['nonce'] ?? null,
             'chain_id' => $tx['chainId'] ?? null,
             'meta' => $tx['meta'] ?? [],
@@ -136,7 +146,7 @@ trait InteractsWithWeb3
             'gwei' => $tx['gasPrice'] ?? null,
             'fee_max' => $tx['maxFeePerGas'] ?? null,
             'priority_max' => $tx['maxPriorityFeePerGas'] ?? null,
-            'is_1559' => $tx['type'] === 2 || isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) ? true : null,
+            'is_1559' => (($tx['type'] ?? null) === 2) || isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) ? true : null,
             'nonce' => $tx['nonce'] ?? null,
             'chain_id' => $tx['chainId'] ?? null,
             'meta' => $tx['meta'] ?? [],
@@ -153,5 +163,35 @@ trait InteractsWithWeb3
         }
 
         return $adapter->submitTransaction($t, $this);
+    }
+
+    /**
+     * Chain-agnostic native transfer helper (amount in base units, e.g., wei/lamports).
+     */
+    public function transferNative(string $toAddress, string $amount): string
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($this->protocol);
+
+        return $adapter->transferNative($this, $toAddress, $amount);
+    }
+
+    /** Normalize an address for this wallet's protocol. */
+    public function normalizeAddress(string $address): string
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+
+        return $router->for($this->protocol)->normalizeAddress($address);
+    }
+
+    /** Validate an address for this wallet's protocol. */
+    public function validateAddress(string $address): bool
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+
+        return $router->for($this->protocol)->validateAddress($address);
     }
 }

@@ -64,44 +64,40 @@ class Transaction extends Model
     protected static function booted(): void
     {
         static::creating(function (Transaction $tx) {
-            // If gas_limit not provided, estimate it
-            if (empty($tx->gas_limit)) {
+            /** @var Wallet|null $wallet */
+            $wallet = $tx->wallet ?? $tx->wallet()->first();
+            $isEvm = $wallet instanceof Wallet && $wallet->protocol->isEvm();
+
+            // Only perform gas estimation on EVM
+            if ($isEvm && empty($tx->gas_limit)) {
                 /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
                 $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
-                /** @var Wallet|null $wallet */
-                $wallet = $tx->wallet ?? $tx->wallet()->first();
-                if ($wallet instanceof Wallet) {
-                    $estimateHex = $svc->estimateGas($wallet, array_filter([
-                        'to' => $tx->to,
-                        'value' => $tx->value,
-                        'data' => $tx->data,
-                    ], fn ($v) => $v !== null && $v !== ''));
-                    $gasInt = is_string($estimateHex) && str_starts_with($estimateHex, '0x')
-                        ? hexdec(substr($estimateHex, 2))
-                        : (int) $estimateHex;
-                    // Add a small safety margin (12%)
-                    $tx->gas_limit = (int) ceil($gasInt * 1.12);
-                }
+                $estimateHex = $svc->estimateGas($wallet, array_filter([
+                    'to' => $tx->to,
+                    'value' => $tx->value,
+                    'data' => $tx->data,
+                ], fn ($v) => $v !== null && $v !== ''));
+                $gasInt = is_string($estimateHex) && str_starts_with($estimateHex, '0x')
+                    ? hexdec(substr($estimateHex, 2))
+                    : (int) $estimateHex;
+                // Add a small safety margin (12%)
+                $tx->gas_limit = (int) ceil($gasInt * 1.12);
             }
 
-            // Default to EIP-1559 and populate fees if not given
-            if ($tx->is_1559 === null) {
-                $tx->is_1559 = true;
-            }
-            if ($tx->is_1559) {
-                if (empty($tx->priority_max) || empty($tx->fee_max)) {
-                    /** @var Wallet|null $wallet */
-                    $wallet = $wallet ?? ($tx->wallet ?? $tx->wallet()->first());
-                    if ($wallet instanceof Wallet) {
-                        /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
-                        $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
-                        $fees = $svc->suggestFees($wallet);
-                        if (empty($tx->priority_max)) {
-                            $tx->priority_max = $fees['priority'];
-                        }
-                        if (empty($tx->fee_max)) {
-                            $tx->fee_max = $fees['max'];
-                        }
+            // Only set EIP-1559 defaults for EVM
+            if ($isEvm) {
+                if ($tx->is_1559 === null) {
+                    $tx->is_1559 = true;
+                }
+                if ($tx->is_1559 && (empty($tx->priority_max) || empty($tx->fee_max))) {
+                    /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
+                    $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
+                    $fees = $svc->suggestFees($wallet);
+                    if (empty($tx->priority_max)) {
+                        $tx->priority_max = $fees['priority'];
+                    }
+                    if (empty($tx->fee_max)) {
+                        $tx->fee_max = $fees['max'];
                     }
                 }
             }

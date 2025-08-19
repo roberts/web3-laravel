@@ -68,4 +68,17 @@ class SuiJsonRpcClient
             'WaitForLocalExecution',
         ]);
     }
+
+    /** Build a simple SUI native transfer and return txBytes container. */
+    public function transferSui(string $signer, string $suiObjectId, string $recipient, int|string $amount, int $gasBudget): array
+    {
+        // RPC expects: [signer, suiObjectId, gasBudget, recipient, amount]
+        return $this->rpc->call('sui_transferSui', [
+            $signer,
+            $suiObjectId,
+            (int) $gasBudget,
+            $recipient,
+            (int) $amount,
+        ]);
+    }
 }

@@ -17,7 +17,8 @@ class TransactionCostEstimator implements EstimatorContract
             $price = max(1, $this->rpc->getReferenceGasPrice());
         } catch (\Throwable) {
         }
-        $computeUnit = 1000; // placeholder compute budget
+    // Use a conservative budget tied to reference gas price
+    $computeUnit = 10_000; // basic transfer often ~5000-10k; keep simple for now
         $fee = (string) ($price * $computeUnit);
         $amount = (string) ($tx->value ?? '0');
         $total = $this->addDec($amount, $fee);
