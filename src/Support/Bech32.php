@@ -9,12 +9,13 @@ namespace Roberts\Web3Laravel\Support;
 class Bech32
 {
     private const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+
     private const GEN = [
-        0x3b6a57b2,
-        0x26508e6d,
-        0x1ea119fa,
-        0x3d4233dd,
-        0x2a1462b3,
+        0x3B6A57B2,
+        0x26508E6D,
+        0x1EA119FA,
+        0x3D4233DD,
+        0x2A1462B3,
     ];
 
     private static function polymod(array $values): int
@@ -22,7 +23,7 @@ class Bech32
         $chk = 1;
         foreach ($values as $v) {
             $b = $chk >> 25;
-            $chk = (($chk & 0x1ffffff) << 5) ^ $v;
+            $chk = (($chk & 0x1FFFFFF) << 5) ^ $v;
             for ($i = 0; $i < 5; $i++) {
                 $chk ^= (($b >> $i) & 1) ? self::GEN[$i] : 0;
             }
@@ -99,7 +100,7 @@ class Bech32
             $chars .= self::CHARSET[$d];
         }
 
-    return strtolower($hrp.'1'.$chars);
+        return strtolower($hrp.'1'.$chars);
     }
 
     /**

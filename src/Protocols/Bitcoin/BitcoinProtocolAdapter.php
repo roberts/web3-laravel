@@ -2,19 +2,18 @@
 
 namespace Roberts\Web3Laravel\Protocols\Bitcoin;
 
+use Elliptic\EC;
 use Illuminate\Database\Eloquent\Model;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
-use Elliptic\EC;
 
 class BitcoinProtocolAdapter implements ProtocolAdapter
 {
-    public function __construct(private KeyEngineInterface $keys)
-    {
-    }
+    public function __construct(private KeyEngineInterface $keys) {}
+
     public function protocol(): BlockchainProtocol
     {
         return BlockchainProtocol::BITCOIN;

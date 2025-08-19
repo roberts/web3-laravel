@@ -13,9 +13,8 @@ use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
 class SuiProtocolAdapter implements ProtocolAdapter
 {
-    public function __construct(private KeyEngineInterface $keys)
-    {
-    }
+    public function __construct(private KeyEngineInterface $keys) {}
+
     public function protocol(): BlockchainProtocol
     {
         return BlockchainProtocol::SUI;

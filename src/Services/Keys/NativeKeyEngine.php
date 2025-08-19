@@ -68,7 +68,7 @@ class NativeKeyEngine implements KeyEngineInterface
                 throw new \InvalidArgumentException('Invalid path segment: '.$p);
             }
             $index = (int) $num;
-            if ($index < 0 || $index > 0x7fffffff) {
+            if ($index < 0 || $index > 0x7FFFFFFF) {
                 throw new \InvalidArgumentException('Invalid index range');
             }
             $out[] = [$index, $hardened];
@@ -111,6 +111,7 @@ class NativeKeyEngine implements KeyEngineInterface
         $I = hash_hmac('sha512', $seed, 'Bitcoin seed', true);
         $IL = substr($I, 0, 32);
         $IR = substr($I, 32);
+
         // If IL not in [1, n-1], spec says discard; we assume ok for tests
         return [$IL, $IR];
     }
@@ -218,8 +219,8 @@ class NativeKeyEngine implements KeyEngineInterface
                 return [$priv, ''];
         }
 
-    // @phpstan-ignore-next-line exhaustive switch satisfied; fallback for runtime safety
-    return ['0x'.strtolower(bin2hex(random_bytes(32))), ''];
+        // @phpstan-ignore-next-line exhaustive switch satisfied; fallback for runtime safety
+        return ['0x'.strtolower(bin2hex(random_bytes(32))), ''];
     }
 
     public function publicKeyToAddress(BlockchainProtocol $protocol, string $network, string $scheme, string $publicKeyBytes): string
@@ -231,6 +232,7 @@ class NativeKeyEngine implements KeyEngineInterface
                 // Sui address = first 32 bytes of blake2b-256(pubkey || schemeFlag)
                 $flag = "\x00"; // ed25519
                 $digest = sodium_crypto_generichash($publicKeyBytes.$flag, '', 32);
+
                 return '0x'.bin2hex($digest);
             case BlockchainProtocol::XRPL:
                 // XRPL classic address (ED25519) = base58 with ripple alphabet of (0x00 + RIPEMD160(SHA256(pubkey))) + 4-byte checksum
@@ -239,6 +241,7 @@ class NativeKeyEngine implements KeyEngineInterface
                 $payload = "\x00".$rip;
                 $check = substr(hash('sha256', hash('sha256', $payload, true), true), 0, 4);
                 $alphabet = 'rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz';
+
                 return (new Base58(['characters' => $alphabet]))->encode($payload.$check);
             case BlockchainProtocol::CARDANO:
                 // Placeholder: bech32 not implemented in Phase 1
@@ -252,12 +255,14 @@ class NativeKeyEngine implements KeyEngineInterface
                 $sha = hash('sha256', $publicKeyBytes, true);
                 $rip = hash('ripemd160', $sha, true);
                 $hrp = ($network === 'testnet' || $network === 'signet' || $network === 'regtest') ? 'tb' : 'bc';
+
                 return Bech32::encodeSegwit($hrp, 0, $rip);
             case BlockchainProtocol::EVM:
                 // EVM address derives from Keccak(pubkey); handled elsewhere
                 return '';
-    }
-    // @phpstan-ignore-next-line exhaustive switch satisfied; fallback for runtime safety
-    return '';
+        }
+
+        // @phpstan-ignore-next-line exhaustive switch satisfied; fallback for runtime safety
+        return '';
     }
 }

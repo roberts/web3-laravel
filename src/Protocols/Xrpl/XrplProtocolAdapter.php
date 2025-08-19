@@ -11,9 +11,8 @@ use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
 class XrplProtocolAdapter implements ProtocolAdapter
 {
-    public function __construct(private KeyEngineInterface $keys)
-    {
-    }
+    public function __construct(private KeyEngineInterface $keys) {}
+
     public function protocol(): BlockchainProtocol
     {
         return BlockchainProtocol::XRPL;

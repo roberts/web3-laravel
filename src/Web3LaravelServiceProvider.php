@@ -108,7 +108,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             return new SolanaSigner;
         });
 
-    $this->app->singleton(SolanaProtocolAdapter::class, function ($app) {
+        $this->app->singleton(SolanaProtocolAdapter::class, function ($app) {
             return new SolanaProtocolAdapter(
                 $app->make(SolanaJsonRpcClient::class),
                 $app->make(SolanaSigner::class)
