@@ -41,7 +41,7 @@ class Wallet extends Model
         'is_active' => 'boolean',
         'last_used_at' => 'datetime',
         'meta' => 'array',
-    'protocol' => BlockchainProtocol::class,
+        'protocol' => BlockchainProtocol::class,
     ];
 
     // Relationships

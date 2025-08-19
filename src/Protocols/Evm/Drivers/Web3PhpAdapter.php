@@ -15,49 +15,56 @@ class Web3PhpAdapter implements EvmClientInterface
     {
         $eth = $this->manager->eth();
         $result = $this->manager->ethCall($eth, 'chainId');
+
         return (int) hexdec(substr((string) $result, 2));
     }
 
     public function getBalance(string $address, string $blockTag = 'latest'): string
     {
-    $eth = $this->manager->eth();
-    $result = $this->manager->ethCall($eth, 'getBalance', [strtolower($address), $blockTag]);
+        $eth = $this->manager->eth();
+        $result = $this->manager->ethCall($eth, 'getBalance', [strtolower($address), $blockTag]);
+
         return is_object($result) && method_exists($result, 'toString') ? (string) $result->toString() : (string) $result;
     }
 
     public function gasPrice(): string
     {
-    $eth = $this->manager->eth();
-    $result = $this->manager->ethCall($eth, 'gasPrice');
+        $eth = $this->manager->eth();
+        $result = $this->manager->ethCall($eth, 'gasPrice');
+
         return is_object($result) && method_exists($result, 'toString') ? (string) $result->toString() : (string) $result;
     }
 
     public function estimateGas(array $tx, string $blockTag = 'latest'): string
     {
-    $eth = $this->manager->eth();
-    $payload = $tx;
-    $result = $this->manager->ethCall($eth, 'estimateGas', [$payload, $blockTag]);
+        $eth = $this->manager->eth();
+        $payload = $tx;
+        $result = $this->manager->ethCall($eth, 'estimateGas', [$payload, $blockTag]);
+
         return is_object($result) && method_exists($result, 'toString') ? (string) $result->toString() : (string) $result;
     }
 
     public function getTransactionCount(string $address, string $blockTag = 'latest'): string
     {
-    $eth = $this->manager->eth();
-    $result = $this->manager->ethCall($eth, 'getTransactionCount', [strtolower($address), $blockTag]);
+        $eth = $this->manager->eth();
+        $result = $this->manager->ethCall($eth, 'getTransactionCount', [strtolower($address), $blockTag]);
+
         return is_object($result) && method_exists($result, 'toString') ? (string) $result->toString() : (string) $result;
     }
 
     public function sendRawTransaction(string $rawTx): string
     {
-    $eth = $this->manager->eth();
-    $result = $this->manager->ethCall($eth, 'sendRawTransaction', [$rawTx]);
-    return (string) $result;
+        $eth = $this->manager->eth();
+        $result = $this->manager->ethCall($eth, 'sendRawTransaction', [$rawTx]);
+
+        return (string) $result;
     }
 
     public function call(array $tx, string $blockTag = 'latest'): string
     {
         $eth = $this->manager->eth();
         $result = $this->manager->ethCall($eth, 'call', [$tx, $blockTag]);
+
         return (string) $result;
     }
 
@@ -65,6 +72,7 @@ class Web3PhpAdapter implements EvmClientInterface
     {
         $eth = $this->manager->eth();
         $result = $this->manager->ethCall($eth, 'blockNumber');
+
         return (string) $result;
     }
 
@@ -72,6 +80,7 @@ class Web3PhpAdapter implements EvmClientInterface
     {
         $eth = $this->manager->eth();
         $result = $this->manager->ethCall($eth, 'getTransactionReceipt', [$txHash]);
+
         return is_array($result) ? $result : null;
     }
 
@@ -79,6 +88,7 @@ class Web3PhpAdapter implements EvmClientInterface
     {
         $eth = $this->manager->eth();
         $result = $this->manager->ethCall($eth, 'getLogs', [$filter]);
+
         return is_array($result) ? $result : [];
     }
 }

@@ -4,11 +4,10 @@ namespace Roberts\Web3Laravel\Services;
 
 use Elliptic\EC;
 use Roberts\Web3Laravel\Models\Wallet;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Support\Hex;
 use Roberts\Web3Laravel\Support\Rlp;
 use Roberts\Web3Laravel\Web3Laravel;
-use Roberts\Web3Laravel\Support\Hex;
-use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
-use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 
 class TransactionService
 {
@@ -46,10 +45,10 @@ class TransactionService
         try {
             $priority = $this->ethCall($eth, 'maxPriorityFeePerGas');
         } catch (\Throwable) {
-                $priority = Hex::toHex(1_000_000_000, true); // 1 gwei fallback
+            $priority = Hex::toHex(1_000_000_000, true); // 1 gwei fallback
         }
         if (! is_string($priority)) {
-                $priority = Hex::toHex($priority, true);
+            $priority = Hex::toHex($priority, true);
         }
         // use gasPrice as a simple maxFee fallback
         try {
@@ -120,24 +119,24 @@ class TransactionService
                 ]);
             }
 
-                $toHex = $to ? Hex::toHex($to) : '';
-                $valueHex = is_string($value) ? $value : Hex::toHex($value, true);
-                $dataHex = Hex::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
+            $toHex = $to ? Hex::toHex($to) : '';
+            $valueHex = is_string($value) ? $value : Hex::toHex($value, true);
+            $dataHex = Hex::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
 
             if (! class_exists('Web3p\\EthereumTx\\Transaction')) {
                 throw new \RuntimeException('Signing not available. Please require web3p/ethereum-tx.');
             }
 
-                $txData = [
-                    'nonce' => Hex::toHex($nonce, true),
-                    'gasPrice' => Hex::toHex($gasPrice, true),
-                    'gas' => Hex::toHex($gasLimit, true),
-                    'gasLimit' => Hex::toHex($gasLimit, true),
-                    'to' => $toHex ?: '',
-                    'value' => $valueHex,
-                    'data' => $dataHex,
-                    'chainId' => $chainId,
-                ];
+            $txData = [
+                'nonce' => Hex::toHex($nonce, true),
+                'gasPrice' => Hex::toHex($gasPrice, true),
+                'gas' => Hex::toHex($gasLimit, true),
+                'gasLimit' => Hex::toHex($gasLimit, true),
+                'to' => $toHex ?: '',
+                'value' => $valueHex,
+                'data' => $dataHex,
+                'chainId' => $chainId,
+            ];
 
             $txObj = new \Web3p\EthereumTx\Transaction($txData);
             $privKeyHex = $from->decryptKey() ?? '';
@@ -150,10 +149,10 @@ class TransactionService
             return app(EvmClientInterface::class)->sendRawTransaction($rawHex);
         }
 
-    $client = $from->web3();
-    /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
-    $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
-    $eth = $manager->ethFrom($client);
+        $client = $from->web3();
+        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
+        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
+        $eth = $manager->ethFrom($client);
 
         // Fetch missing fields
         $nonce = $tx['nonce'] ?? $this->ethCall($eth, 'getTransactionCount', [strtolower($from->address), 'pending']);
@@ -163,7 +162,7 @@ class TransactionService
         $to = $tx['to'] ?? null;
         $value = $tx['value'] ?? 0;
         $data = $tx['data'] ?? '0x';
-    $chainId = $tx['chainId'] ?? config('web3-laravel.default_chain_id');
+        $chainId = $tx['chainId'] ?? config('web3-laravel.default_chain_id');
 
         if ($gasLimit === null) {
             $est = $this->ethCall($eth, 'estimateGas', [[
@@ -199,24 +198,24 @@ class TransactionService
         }
 
         // Normalize
-            $toHex = $to ? Hex::toHex($to) : '';
-            $valueHex = is_string($value) ? $value : Hex::toHex($value, true);
-            $dataHex = Hex::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
+        $toHex = $to ? Hex::toHex($to) : '';
+        $valueHex = is_string($value) ? $value : Hex::toHex($value, true);
+        $dataHex = Hex::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
 
         if (! class_exists('Web3p\\EthereumTx\\Transaction')) {
             throw new \RuntimeException('Signing not available. Please require web3p/ethereum-tx.');
         }
 
-            $txData = [
-                'nonce' => Hex::toHex($nonce, true),
-                'gasPrice' => Hex::toHex($gasPrice, true),
-                'gas' => Hex::toHex($gasLimit, true),
-                'gasLimit' => Hex::toHex($gasLimit, true),
-                'to' => $toHex ?: '',
-                'value' => $valueHex,
-                'data' => $dataHex,
-                'chainId' => $chainId,
-            ];
+        $txData = [
+            'nonce' => Hex::toHex($nonce, true),
+            'gasPrice' => Hex::toHex($gasPrice, true),
+            'gas' => Hex::toHex($gasLimit, true),
+            'gasLimit' => Hex::toHex($gasLimit, true),
+            'to' => $toHex ?: '',
+            'value' => $valueHex,
+            'data' => $dataHex,
+            'chainId' => $chainId,
+        ];
 
         $txObj = new \Web3p\EthereumTx\Transaction($txData);
         $privKeyHex = $from->decryptKey() ?? '';
@@ -299,7 +298,7 @@ class TransactionService
 
         $rlpForSign = Rlp::encodeList($signItems);
         $payload = "\x02".$rlpForSign;
-    $hashHex = \Roberts\Web3Laravel\Support\Keccak::hash('0x'.bin2hex($payload));
+        $hashHex = \Roberts\Web3Laravel\Support\Keccak::hash('0x'.bin2hex($payload));
 
         $ec = new EC('secp256k1');
         $priv = $from->decryptKey() ?? '';

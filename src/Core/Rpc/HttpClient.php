@@ -37,12 +37,14 @@ class HttpClient implements ClientInterface
                 if (is_array($body) && array_key_exists('error', $body) && $body['error']) {
                     throw new \RuntimeException('RPC error: '.json_encode($body['error']));
                 }
+
                 return $body['result'] ?? null;
             }
 
             // If retriable (>=500 or 429), backoff
             if ($attempt <= $this->retries && ($res->status() >= 500 || $res->status() === 429)) {
                 usleep($this->backoffMs * 1000);
+
                 continue;
             }
 

@@ -3,10 +3,10 @@
 namespace Roberts\Web3Laravel\Concerns;
 
 use InvalidArgumentException;
-use Roberts\Web3Laravel\Models\Blockchain;
-use Roberts\Web3Laravel\Web3Laravel as Web3Manager;
-use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
+use Roberts\Web3Laravel\Models\Blockchain;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Web3Laravel as Web3Manager;
 use Web3\Web3;
 
 trait InteractsWithWeb3
@@ -57,6 +57,7 @@ trait InteractsWithWeb3
         if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm() && config('web3-laravel.driver') === 'native') {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
+
             return $evm->getBalance($this->address, $blockTag);
         }
 
@@ -79,6 +80,7 @@ trait InteractsWithWeb3
         if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm() && config('web3-laravel.driver') === 'native') {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
+
             return $evm->getTransactionCount($this->address, $blockTag);
         }
 
@@ -101,6 +103,7 @@ trait InteractsWithWeb3
         if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm() && config('web3-laravel.driver') === 'native') {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
+
             return $evm->gasPrice();
         }
 
@@ -130,6 +133,7 @@ trait InteractsWithWeb3
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
             $payload = array_merge(['from' => strtolower($this->address)], $tx);
+
             return $evm->estimateGas($payload, $blockTag);
         }
 

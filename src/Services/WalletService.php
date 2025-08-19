@@ -13,9 +13,9 @@ use Roberts\Web3Laravel\Support\Keccak;
 class WalletService
 {
     /**
-    * Generate a new EVM wallet (secp256k1) and persist it.
-    * - Derives Ethereum-compatible address from the generated private key.
-    * - Encrypts key via Wallet mutator.
+     * Generate a new EVM wallet (secp256k1) and persist it.
+     * - Derives Ethereum-compatible address from the generated private key.
+     * - Encrypts key via Wallet mutator.
      */
     public function create(array $attributes = [], ?Model $owner = null, ?Blockchain $blockchain = null): Wallet
     {
@@ -30,8 +30,8 @@ class WalletService
         $pubNoPrefix = substr($pub, 2);
 
         // address = last 20 bytes of keccak256(public_key)
-    $hash = Keccak::hash($pubNoPrefix, true); // 0x-prefixed keccak of public key (no 0x)
-    $address = '0x'.substr(Hex::stripZero($hash), -40);
+        $hash = Keccak::hash($pubNoPrefix, true); // 0x-prefixed keccak of public key (no 0x)
+        $address = '0x'.substr(Hex::stripZero($hash), -40);
         $address = strtolower($address);
 
         $data = array_merge([
@@ -55,7 +55,7 @@ class WalletService
      */
     public function createForBlockchain(Blockchain $blockchain, array $attributes = [], ?Model $owner = null): Wallet
     {
-    if ($blockchain->protocol->isSolana()) {
+        if ($blockchain->protocol->isSolana()) {
             // Pass owner via attributes for Solana service
             if ($owner instanceof Model) {
                 $attributes['owner_id'] = $owner->getKey();

@@ -13,6 +13,7 @@ class EvmJsonRpcClient implements EvmClientInterface
     public function chainId(): int
     {
         $hex = (string) $this->rpc->call('eth_chainId');
+
         return (int) hexdec(substr($hex, 2));
     }
 
@@ -29,6 +30,7 @@ class EvmJsonRpcClient implements EvmClientInterface
     public function estimateGas(array $tx, string $blockTag = 'latest'): string
     {
         $payload = array_merge(['from' => strtolower($tx['from'] ?? '')], $tx);
+
         return (string) $this->rpc->call('eth_estimateGas', [$payload, $blockTag]);
     }
 
@@ -55,12 +57,14 @@ class EvmJsonRpcClient implements EvmClientInterface
     public function getTransactionReceipt(string $txHash): ?array
     {
         $res = $this->rpc->call('eth_getTransactionReceipt', [$txHash]);
+
         return is_array($res) ? $res : null;
     }
 
     public function getLogs(array $filter): array
     {
         $res = $this->rpc->call('eth_getLogs', [$filter]);
+
         return is_array($res) ? $res : [];
     }
 }

@@ -28,7 +28,7 @@ it('creates a solana wallet with base58 address and encrypted key', function () 
     expect($wallet->address)->not->toBeEmpty();
 
     // Validate base58 and decoded length 32
-    $decoded = (new Base58(["characters" => Base58::BITCOIN]))->decode($wallet->address);
+    $decoded = (new Base58(['characters' => Base58::BITCOIN]))->decode($wallet->address);
     expect(strlen($decoded))->toBe(32);
 
     // Key is encrypted and not empty

@@ -16,6 +16,7 @@ class Keccak
             $cls = 'kornrunner\\Keccak';
             // raw_output=false to return hex string
             $digest = $cls::hash($bin, 256, false);
+
             return '0x'.strtolower($digest);
         }
         // Fallback to ext/hash keccak if available
@@ -31,6 +32,7 @@ class Keccak
         if (strlen($hex) % 2 !== 0) {
             $hex = '0'.$hex;
         }
+
         return $hex;
     }
 }

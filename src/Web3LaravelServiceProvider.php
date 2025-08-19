@@ -3,13 +3,12 @@
 namespace Roberts\Web3Laravel;
 
 use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
-use Roberts\Web3Laravel\Services\ContractCaller;
-use Roberts\Web3Laravel\Core\Rpc\HttpClient as NativeHttpRpc;
-use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Core\Provider\Endpoint;
 use Roberts\Web3Laravel\Core\Provider\Pool as ProviderPool;
+use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
+use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
 use Roberts\Web3Laravel\Services\SolanaService;
 use Roberts\Web3Laravel\Services\TokenService;
@@ -112,6 +111,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             // Fallback (web3php): use adapter backed by current Web3 manager
             $endpoint = config('web3-laravel.default_rpc');
             $timeout = (int) config('web3-laravel.request_timeout', 10);
+
             return new \Roberts\Web3Laravel\Protocols\Evm\Drivers\Web3PhpAdapter($app->make(\Roberts\Web3Laravel\Web3Laravel::class));
         });
 

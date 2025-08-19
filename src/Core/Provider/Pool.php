@@ -6,6 +6,7 @@ class Pool
 {
     /** @var list<Endpoint> */
     protected array $endpoints;
+
     protected int $index = 0;
 
     /** @param list<Endpoint> $endpoints */

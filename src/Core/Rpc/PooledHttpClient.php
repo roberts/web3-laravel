@@ -51,7 +51,7 @@ class PooledHttpClient implements ClientInterface
             }
         } while ($attempt <= $this->retries);
 
-    // Bubble the last error as previous if available
-    throw new \RuntimeException('RPC call failed', 0, $lastError);
+        // Bubble the last error as previous if available
+        throw new \RuntimeException('RPC call failed', 0, $lastError);
     }
 }

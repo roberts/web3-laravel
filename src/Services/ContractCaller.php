@@ -22,7 +22,7 @@ class ContractCaller
      */
     public function call(array $abi, string $to, string $function, array $params = [], ?string $from = null, string $blockTag = 'latest'): array
     {
-    $data = $this->encodeCallData($abi, $function, $params);
+        $data = $this->encodeCallData($abi, $function, $params);
 
         $tx = [
             'to' => $to,
@@ -32,7 +32,7 @@ class ContractCaller
             $tx['from'] = $from;
         }
 
-    $raw = $this->evm->call($tx, $blockTag);
+        $raw = $this->evm->call($tx, $blockTag);
 
         return $this->decodeCallResult($abi, $function, $raw);
     }
@@ -40,17 +40,18 @@ class ContractCaller
     /** Build 0x-prefixed data for a function call based on ABI and params. */
     public function encodeCallData(array $abi, string $function, array $params = []): string
     {
-    return Abi::encodeFunctionCall($abi, $function, $params);
+        return Abi::encodeFunctionCall($abi, $function, $params);
     }
 
     /** Decode a 0x-hex return payload into PHP values per ABI outputs. */
     public function decodeCallResult(array $abi, string $function, string $raw): array
     {
-    $method = $this->findFunction($abi, $function);
-    $outputs = $method['outputs'] ?? [];
-    $outputTypes = $this->normalizeParamTypes($outputs);
-    $decoded = (array) Abi::decodeParameters($outputTypes, $raw);
-    return $this->deepNormalize($decoded);
+        $method = $this->findFunction($abi, $function);
+        $outputs = $method['outputs'] ?? [];
+        $outputTypes = $this->normalizeParamTypes($outputs);
+        $decoded = (array) Abi::decodeParameters($outputTypes, $raw);
+
+        return $this->deepNormalize($decoded);
     }
 
     protected function findFunction(array $abi, string $name): array

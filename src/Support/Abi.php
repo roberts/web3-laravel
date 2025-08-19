@@ -9,6 +9,7 @@ class Abi
     public static function encodeParameters(array $types, array $values): string
     {
         [$head, $tail] = self::encodeTuple($types, $values);
+
         return '0x'.bin2hex($head.$tail);
     }
 
@@ -16,6 +17,7 @@ class Abi
     public static function decodeParameters(array $types, string $data): array
     {
         $bin = hex2bin(Hex::stripZero($data)) ?: '';
+
         return self::decodeTuple($types, $bin, 0)[0];
     }
 
@@ -27,6 +29,7 @@ class Abi
         $signature = ($method['name'] ?? $name).'('.implode(',', $inputTypes).')';
         $selector = substr(Keccak::hash($signature), 2, 8);
         $encoded = self::encodeParameters($inputTypes, $params);
+
         return '0x'.$selector.substr($encoded, 2);
     }
 
@@ -47,6 +50,7 @@ class Abi
         foreach ($params as $p) {
             $types[] = self::normalizeType($p);
         }
+
         return $types;
     }
 
@@ -59,21 +63,32 @@ class Abi
             foreach ((array) ($param['components'] ?? []) as $c) {
                 $inner[] = self::normalizeType($c);
             }
+
             return '('.implode(',', $inner).')'.$suffix;
         }
+
         return $type;
     }
 
     private static function isDynamic(string $type): bool
     {
-        if ($type === 'string' || $type === 'bytes') return true;
-        if (preg_match('/^bytes(\d+)$/', $type)) return false;
-        if (str_ends_with($type, '[]')) return true;
-        if (preg_match('/\[[0-9]+\]$/', $type)) return false; // static-sized array
+        if ($type === 'string' || $type === 'bytes') {
+            return true;
+        }
+        if (preg_match('/^bytes(\d+)$/', $type)) {
+            return false;
+        }
+        if (str_ends_with($type, '[]')) {
+            return true;
+        }
+        if (preg_match('/\[[0-9]+\]$/', $type)) {
+            return false;
+        } // static-sized array
         if (str_starts_with($type, '(')) {
             // Bare tuple is static; only dynamic if it is a tuple array (handled by [] case above)
             return false;
         }
+
         return false;
     }
 
@@ -81,6 +96,7 @@ class Abi
     {
         $len = strlen($bin);
         $pad = (32 - ($len % 32)) % 32;
+
         return $bin.str_repeat("\x00", $pad);
     }
 
@@ -93,8 +109,11 @@ class Abi
         } else {
             $hex = dechex((int) $v);
         }
-        if (strlen($hex) % 2 !== 0) $hex = '0'.$hex;
+        if (strlen($hex) % 2 !== 0) {
+            $hex = '0'.$hex;
+        }
         $bin = hex2bin($hex) ?: '';
+
         return str_repeat("\x00", 32 - strlen($bin)).$bin;
     }
 
@@ -109,6 +128,7 @@ class Abi
         $hex = Hex::stripZero($hex);
         $hex = str_pad(strtolower($hex), 40, '0', STR_PAD_LEFT);
         $bin = hex2bin($hex) ?: '';
+
         return str_repeat("\x00", 12).$bin; // 12 + 20 = 32
     }
 
@@ -124,6 +144,7 @@ class Abi
             $hex = substr($hex, 0, $n * 2);
         }
         $bin = hex2bin(str_pad($hex, $n * 2, '0', STR_PAD_RIGHT)) ?: '';
+
         return self::pad32($bin);
     }
 
@@ -131,19 +152,34 @@ class Abi
     {
         $bin = $isHex ? (hex2bin(Hex::stripZero($hexOrBin)) ?: '') : $hexOrBin;
         $len = strlen($bin);
+
         return self::encUint($len).self::pad32($bin);
     }
 
     private static function encodeOne(string $type, $value): array
     {
         // returns [head(32)|"", tail(0|n)] where head holds value or offset
-        if ($type === 'string') return ['', self::encBytesDynamic($value, false)];
-        if ($type === 'bytes') return ['', self::encBytesDynamic($value, true)];
-        if (preg_match('/^bytes(\d+)$/', $type, $m)) return [self::encBytesFixed($value, (int) $m[1]), ''];
-        if ($type === 'bool') return [self::encBool($value), ''];
-        if ($type === 'address') return [self::encAddress($value), ''];
-        if (preg_match('/^uint(\d+)?$/', $type)) return [self::encUint($value), ''];
-        if (preg_match('/^int(\d+)?$/', $type)) return [self::encInt($value), ''];
+        if ($type === 'string') {
+            return ['', self::encBytesDynamic($value, false)];
+        }
+        if ($type === 'bytes') {
+            return ['', self::encBytesDynamic($value, true)];
+        }
+        if (preg_match('/^bytes(\d+)$/', $type, $m)) {
+            return [self::encBytesFixed($value, (int) $m[1]), ''];
+        }
+        if ($type === 'bool') {
+            return [self::encBool($value), ''];
+        }
+        if ($type === 'address') {
+            return [self::encAddress($value), ''];
+        }
+        if (preg_match('/^uint(\d+)?$/', $type)) {
+            return [self::encUint($value), ''];
+        }
+        if (preg_match('/^int(\d+)?$/', $type)) {
+            return [self::encInt($value), ''];
+        }
 
         if (str_starts_with($type, '(')) {
             // tuple or tuple array
@@ -157,12 +193,14 @@ class Abi
                     [$h, $t] = self::encodeTuple($types, (array) $el);
                     $packed .= $h.$t;
                 }
+
                 return ['', $packed];
             }
             // bare tuple is static inline in the head
             $inner = rtrim(substr($type, 1), ')');
             $types = self::splitTupleTypes($inner);
             [$h, $t] = self::encodeTuple($types, (array) $value);
+
             return [$h.$t, ''];
         }
 
@@ -174,9 +212,10 @@ class Abi
             $tails = [];
             foreach ($values as $v) {
                 [$h, $t] = self::encodeOne($elemType, $v);
-                $heads[] = $h; $tails[] = $t;
+                $heads[] = $h;
+                $tails[] = $t;
             }
-            if (array_reduce($tails, fn($c,$x)=>$c || $x!=='' , false)) {
+            if (array_reduce($tails, fn ($c, $x) => $c || $x !== '', false)) {
                 // dynamic elements: need offsets
                 $offset = count($values) * 32;
                 $outHead = '';
@@ -190,6 +229,7 @@ class Abi
             } else {
                 $packed .= implode('', $heads);
             }
+
             return ['', $packed];
         }
 
@@ -201,22 +241,25 @@ class Abi
             $tails = '';
             foreach ($values as $v) {
                 [$h, $t] = self::encodeOne($elemType, $v);
-                $heads .= $h; $tails .= $t;
+                $heads .= $h;
+                $tails .= $t;
             }
             if ($tails !== '') {
                 // static array with dynamic elems requires offsets into the tail
                 $offset = $len * 32;
                 $outHead = '';
                 $outTail = '';
-                for ($i=0; $i<$len; $i++) {
-                    $chunk = substr($heads, $i*32, 32);
-                    $dyn = substr($tails, $i*32) ?: '';
+                for ($i = 0; $i < $len; $i++) {
+                    $chunk = substr($heads, $i * 32, 32);
+                    $dyn = substr($tails, $i * 32) ?: '';
                     $outHead .= self::encUint($offset);
                     $outTail .= $chunk.$dyn;
                     $offset += strlen($chunk.$dyn);
                 }
+
                 return [$outHead, $outTail];
             }
+
             return [$heads, ''];
         }
 
@@ -231,8 +274,11 @@ class Abi
         $dynamic = false;
         foreach ($types as $i => $t) {
             [$h, $tl] = self::encodeOne($t, $values[$i] ?? null);
-            $heads[] = $h; $tails[] = $tl;
-            if ($tl !== '') $dynamic = true;
+            $heads[] = $h;
+            $tails[] = $tl;
+            if ($tl !== '') {
+                $dynamic = true;
+            }
         }
         if (! $dynamic) {
             return [implode('', $heads), ''];
@@ -249,6 +295,7 @@ class Abi
                 $offset += strlen($heads[$i].$tails[$i]);
             }
         }
+
         return [$outHead, $outTail];
     }
 
@@ -279,35 +326,51 @@ class Abi
         }
         // decode dynamics
         foreach ($types as $i => $t) {
-            if (! self::isDynamic($t)) continue;
+            if (! self::isDynamic($t)) {
+                continue;
+            }
             $values[$i] = self::decodeDynamic($t, $bin, $start + ($pointers[$i] ?? 0));
         }
+
         return [$values, $offset];
     }
 
     private static function decodeStatic(string $type, string $word)
     {
-        if ($type === 'bool') return (bool) (ord(substr($word, -1)) & 1);
+        if ($type === 'bool') {
+            return (bool) (ord(substr($word, -1)) & 1);
+        }
         if (preg_match('/^uint(\d+)?$/', $type)) {
             $hex = ltrim(bin2hex($word), '0');
-            if ($hex === '') return '0';
+            if ($hex === '') {
+                return '0';
+            }
             if (function_exists('gmp_init')) {
                 return gmp_strval(gmp_init($hex, 16), 10);
             }
+
             // Fallback (limited precision): cast to string to preserve expectation type
             return (string) hexdec($hex);
         }
         if (preg_match('/^int(\d+)?$/', $type)) {
             // Minimal: treat as unsigned for now and return decimal string
             $hex = ltrim(bin2hex($word), '0');
-            if ($hex === '') return '0';
+            if ($hex === '') {
+                return '0';
+            }
             if (function_exists('gmp_init')) {
                 return gmp_strval(gmp_init($hex, 16), 10);
             }
+
             return (string) hexdec($hex);
         }
-        if ($type === 'address') return '0x'.substr(bin2hex(substr($word, -20)), 0, 40);
-        if (preg_match('/^bytes(\d+)$/', $type, $m)) return '0x'.substr(bin2hex(substr($word, 0, (int)$m[1])), 0, (int)$m[1]*2);
+        if ($type === 'address') {
+            return '0x'.substr(bin2hex(substr($word, -20)), 0, 40);
+        }
+        if (preg_match('/^bytes(\d+)$/', $type, $m)) {
+            return '0x'.substr(bin2hex(substr($word, 0, (int) $m[1])), 0, (int) $m[1] * 2);
+        }
+
         // tuple/static arrays handled in higher-level decode; strings/bytes are dynamic
         return '0x'.bin2hex($word);
     }
@@ -317,17 +380,20 @@ class Abi
         if ($type === 'string') {
             $len = hexdec(bin2hex(substr($bin, $offset, 32)));
             $data = substr($bin, $offset + 32, $len);
+
             return $data;
         }
         if ($type === 'bytes') {
             $len = hexdec(bin2hex(substr($bin, $offset, 32)));
             $data = substr($bin, $offset + 32, $len);
+
             return '0x'.bin2hex($data);
         }
         if (str_starts_with($type, '(')) {
             // tuple dynamic encoded inline
             $inner = rtrim(substr($type, 1), ')');
             $types = self::splitTupleTypes($inner);
+
             return self::decodeTuple($types, $bin, $offset)[0];
         }
         if (str_ends_with($type, '[]')) {
@@ -337,12 +403,13 @@ class Abi
             $out = [];
             for ($i = 0; $i < $len; $i++) {
                 if (self::isDynamic($elemType)) {
-                    $ptr = hexdec(bin2hex(substr($bin, $offset + $i*32, 32)));
+                    $ptr = hexdec(bin2hex(substr($bin, $offset + $i * 32, 32)));
                     $out[] = self::decodeDynamic($elemType, $bin, $offset + $ptr);
                 } else {
-                    $out[] = self::decodeStatic($elemType, substr($bin, $offset + $i*32, 32));
+                    $out[] = self::decodeStatic($elemType, substr($bin, $offset + $i * 32, 32));
                 }
             }
+
             return $out;
         }
         // static arrays: handled at higher level, but provide a simple path
@@ -351,8 +418,9 @@ class Abi
             $len = (int) $m[1];
             $out = [];
             for ($i = 0; $i < $len; $i++) {
-                $out[] = self::decodeStatic($elemType, substr($bin, $offset + $i*32, 32));
+                $out[] = self::decodeStatic($elemType, substr($bin, $offset + $i * 32, 32));
             }
+
             return $out;
         }
         throw new \InvalidArgumentException('Unsupported dynamic type: '.$type);
@@ -365,17 +433,25 @@ class Abi
         $buf = '';
         $depth = 0;
         $len = strlen($inner);
-        for ($i=0; $i<$len; $i++) {
+        for ($i = 0; $i < $len; $i++) {
             $ch = $inner[$i];
-            if ($ch === '(') $depth++;
-            if ($ch === ')') $depth--;
+            if ($ch === '(') {
+                $depth++;
+            }
+            if ($ch === ')') {
+                $depth--;
+            }
             if ($ch === ',' && $depth === 0) {
-                $types[] = $buf; $buf = '';
+                $types[] = $buf;
+                $buf = '';
             } else {
                 $buf .= $ch;
             }
         }
-        if ($buf !== '') $types[] = $buf;
+        if ($buf !== '') {
+            $types[] = $buf;
+        }
+
         return array_map('trim', $types);
     }
 }

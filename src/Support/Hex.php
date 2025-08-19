@@ -30,9 +30,13 @@ class Hex
             // If quantity requested, normalize to no leading zeros
             if ($quantity) {
                 $s = ltrim(substr($hex, 2), '0');
-                if ($s === '') { $s = '0'; }
+                if ($s === '') {
+                    $s = '0';
+                }
+
                 return '0x'.$s;
             }
+
             return $hex;
         }
 
@@ -50,7 +54,9 @@ class Hex
             }
         } else {
             $hex = ltrim($hex, '0');
-            if ($hex === '') { $hex = '0'; }
+            if ($hex === '') {
+                $hex = '0';
+            }
         }
 
         return '0x'.strtolower($hex);

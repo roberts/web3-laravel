@@ -4,8 +4,8 @@ namespace Roberts\Web3Laravel\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
+use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Services\WalletService;
 
 class WalletCreateCommand extends Command
@@ -40,12 +40,14 @@ class WalletCreateCommand extends Command
             $blockchain = Blockchain::query()->find((int) $blockchainId);
             if (! $blockchain) {
                 $this->error('Blockchain with id='.$blockchainId.' not found.');
+
                 return self::FAILURE;
             }
         } elseif (is_numeric($chainId)) {
             $blockchain = Blockchain::query()->where('chain_id', (int) $chainId)->first();
             if (! $blockchain) {
                 $this->error('Blockchain with chain_id='.$chainId.' not found.');
+
                 return self::FAILURE;
             }
         } elseif (is_string($protocol) && $protocol !== '') {
@@ -56,6 +58,7 @@ class WalletCreateCommand extends Command
                 ->first();
             if (! $blockchain) {
                 $this->error('No active blockchain found for protocol='.$protocol.'.');
+
                 return self::FAILURE;
             }
         }
@@ -71,7 +74,7 @@ class WalletCreateCommand extends Command
         }
 
         $this->info('Wallet created: '.$wallet->address);
-    $this->line('Protocol: '.$wallet->protocol->value.' | Encrypted key stored.');
+        $this->line('Protocol: '.$wallet->protocol->value.' | Encrypted key stored.');
 
         return self::SUCCESS;
     }
