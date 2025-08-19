@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
-use Web3\Utils as Web3Utils;
+use Roberts\Web3Laravel\Support\Hex;
+use Roberts\Web3Laravel\Support\Keccak;
 
 class WalletService
 {
@@ -29,8 +30,8 @@ class WalletService
         $pubNoPrefix = substr($pub, 2);
 
         // address = last 20 bytes of keccak256(public_key)
-        $hash = Web3Utils::sha3('0x'.$pubNoPrefix); // 0x-prefixed keccak
-        $address = '0x'.substr(Web3Utils::stripZero($hash), -40);
+    $hash = Keccak::hash($pubNoPrefix, true); // 0x-prefixed keccak of public key (no 0x)
+    $address = '0x'.substr(Hex::stripZero($hash), -40);
         $address = strtolower($address);
 
         $data = array_merge([

@@ -4,6 +4,12 @@ namespace Roberts\Web3Laravel;
 
 use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
 use Roberts\Web3Laravel\Services\ContractCaller;
+use Roberts\Web3Laravel\Core\Rpc\HttpClient as NativeHttpRpc;
+use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
+use Roberts\Web3Laravel\Core\Provider\Endpoint;
+use Roberts\Web3Laravel\Core\Provider\Pool as ProviderPool;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
 use Roberts\Web3Laravel\Services\SolanaService;
 use Roberts\Web3Laravel\Services\TokenService;
@@ -15,11 +21,6 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
-        /*
-         * This class is a Package Service Provider
-         *
-         * More info: https://github.com/spatie/laravel-package-tools
-         */
         $package
             ->name('web3-laravel')
             ->hasConfigFile()
@@ -55,7 +56,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         });
 
         $this->app->singleton(ContractCaller::class, function ($app) {
-            return new ContractCaller($app->make(Web3Laravel::class));
+            return new ContractCaller($app->make(EvmClientInterface::class));
         });
 
         $this->app->singleton(TransactionService::class, function ($app) {
@@ -81,6 +82,37 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(SolanaService::class, function ($app) {
             return new SolanaService;
+        });
+
+        // Driver binding for EVM client
+        $this->app->bind(EvmClientInterface::class, function ($app) {
+            $driver = config('web3-laravel.driver', 'web3php');
+            if ($driver === 'native') {
+                $timeout = (int) config('web3-laravel.request_timeout', 10);
+                $retries = (int) data_get(config('web3-laravel.rpc'), 'retries', 2);
+                $backoff = (int) data_get(config('web3-laravel.rpc'), 'backoff_ms', 200);
+                $headers = (array) data_get(config('web3-laravel.rpc'), 'headers', []);
+                $rpcs = (array) config('web3-laravel.networks');
+                $default = (string) config('web3-laravel.default_rpc');
+                $endpoints = [];
+                if (empty($rpcs)) {
+                    $endpoints[] = new Endpoint($default, 1, $headers);
+                } else {
+                    foreach ($rpcs as $cid => $url) {
+                        if (is_string($url)) {
+                            $endpoints[] = new Endpoint($url, 1, $headers);
+                        }
+                    }
+                }
+                $pool = new ProviderPool($endpoints);
+                $rpc = new PooledHttpClient($pool, $timeout, $retries, $backoff, $headers);
+
+                return new EvmJsonRpcClient($rpc);
+            }
+            // Fallback (web3php): use adapter backed by current Web3 manager
+            $endpoint = config('web3-laravel.default_rpc');
+            $timeout = (int) config('web3-laravel.request_timeout', 10);
+            return new \Roberts\Web3Laravel\Protocols\Evm\Drivers\Web3PhpAdapter($app->make(\Roberts\Web3Laravel\Web3Laravel::class));
         });
 
         // Register event service provider for package

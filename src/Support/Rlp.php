@@ -2,8 +2,6 @@
 
 namespace Roberts\Web3Laravel\Support;
 
-use Web3\Utils as Web3Utils;
-
 class Rlp
 {
     /** Encode a string (binary) per RLP. */
@@ -65,8 +63,8 @@ class Rlp
     /** Encode a hex string (0x...) to RLP string. */
     public static function encodeHex(string $hex): string
     {
-        // $hex is already typed as string; check kept for runtime safety
-        $hex = Web3Utils::stripZero($hex);
+    // $hex is already typed as string; check kept for runtime safety
+    $hex = Hex::stripZero($hex);
         if ($hex === '') {
             return chr(0x80); // empty
         }

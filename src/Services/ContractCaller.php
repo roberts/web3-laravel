@@ -2,18 +2,12 @@
 
 namespace Roberts\Web3Laravel\Services;
 
-use Roberts\Web3Laravel\Web3Laravel;
-use Web3\Contracts\Ethabi;
-use Web3\Utils as Web3Utils;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Support\Abi;
 
 class ContractCaller
 {
-    protected Ethabi $abi;
-
-    public function __construct(protected Web3Laravel $web3)
-    {
-        $this->abi = new Ethabi;
-    }
+    public function __construct(protected EvmClientInterface $evm) {}
 
     /**
      * Encode a function call using ABI and perform eth_call.
@@ -28,9 +22,7 @@ class ContractCaller
      */
     public function call(array $abi, string $to, string $function, array $params = [], ?string $from = null, string $blockTag = 'latest'): array
     {
-        $eth = $this->web3->eth();
-
-        $data = $this->encodeCallData($abi, $function, $params);
+    $data = $this->encodeCallData($abi, $function, $params);
 
         $tx = [
             'to' => $to,
@@ -40,7 +32,7 @@ class ContractCaller
             $tx['from'] = $from;
         }
 
-        $raw = $this->web3->ethCall($eth, 'call', [$tx, $blockTag]);
+    $raw = $this->evm->call($tx, $blockTag);
 
         return $this->decodeCallResult($abi, $function, $raw);
     }
@@ -48,26 +40,17 @@ class ContractCaller
     /** Build 0x-prefixed data for a function call based on ABI and params. */
     public function encodeCallData(array $abi, string $function, array $params = []): string
     {
-        $method = $this->findFunction($abi, $function);
-        $inputTypes = $this->normalizeParamTypes($method['inputs'] ?? []);
-        $signature = ($method['name'] ?? $function).'('.implode(',', $inputTypes).')';
-        $selector = substr(Web3Utils::sha3($signature), 2, 8);
-        $encodedParams = $this->abi->encodeParameters($inputTypes, $params);
-
-        return '0x'.$selector.substr($encodedParams, 2);
+    return Abi::encodeFunctionCall($abi, $function, $params);
     }
 
     /** Decode a 0x-hex return payload into PHP values per ABI outputs. */
     public function decodeCallResult(array $abi, string $function, string $raw): array
     {
-        $method = $this->findFunction($abi, $function);
-        $outputs = $method['outputs'] ?? [];
-        $outputTypes = $this->normalizeParamTypes($outputs);
-        // Ethabi::decodeParameters expects the outputs types and a 0x-hex string
-        $decoded = (array) $this->abi->decodeParameters($outputTypes, $raw);
-
-        // Deep-normalize: convert any BigInteger-like objects with toString into strings, recurse arrays
-        return $this->deepNormalize($decoded);
+    $method = $this->findFunction($abi, $function);
+    $outputs = $method['outputs'] ?? [];
+    $outputTypes = $this->normalizeParamTypes($outputs);
+    $decoded = (array) Abi::decodeParameters($outputTypes, $raw);
+    return $this->deepNormalize($decoded);
     }
 
     protected function findFunction(array $abi, string $name): array

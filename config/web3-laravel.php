@@ -2,6 +2,9 @@
 
 // config for Roberts/Web3Laravel
 return [
+    // Driver for EVM calls: 'web3php' (default) or 'native'
+    'driver' => 'web3php',
+
     // Use database 'blockchains' table to resolve networks when true
     'use_database' => true,
 
@@ -13,6 +16,17 @@ return [
 
     // Request timeout for HTTP/WebSocket providers (seconds)
     'request_timeout' => 10,
+
+    // Native JSON-RPC client settings (used when driver = 'native')
+    'rpc' => [
+        'retries' => 2,
+        'backoff_ms' => 200,
+        'headers' => [],
+        'batch' => [
+            'enabled' => false,
+            'max' => 20,
+        ],
+    ],
 
     // Required confirmations for a transaction to be considered 'confirmed'
     'confirmations_required' => 6,

@@ -5,6 +5,8 @@ namespace Roberts\Web3Laravel\Concerns;
 use InvalidArgumentException;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Web3Laravel as Web3Manager;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Web3\Web3;
 
 trait InteractsWithWeb3
@@ -52,6 +54,12 @@ trait InteractsWithWeb3
     // Public helpers
     public function getBalance(string $blockTag = 'latest'): string
     {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm() && config('web3-laravel.driver') === 'native') {
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            return $evm->getBalance($this->address, $blockTag);
+        }
+
         $balance = $this->ethCall('getBalance', [strtolower($this->address), $blockTag]);
         if (is_object($balance) && method_exists($balance, 'toString')) {
             return (string) $balance->toString();
@@ -68,6 +76,12 @@ trait InteractsWithWeb3
 
     public function getTransactionCount(string $blockTag = 'latest'): string
     {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm() && config('web3-laravel.driver') === 'native') {
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            return $evm->getTransactionCount($this->address, $blockTag);
+        }
+
         $nonce = $this->ethCall('getTransactionCount', [strtolower($this->address), $blockTag]);
         if (is_object($nonce) && method_exists($nonce, 'toString')) {
             return (string) $nonce->toString();
@@ -84,6 +98,12 @@ trait InteractsWithWeb3
 
     public function getGasPrice(): string
     {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm() && config('web3-laravel.driver') === 'native') {
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            return $evm->gasPrice();
+        }
+
         $price = $this->ethCall('gasPrice');
         if (is_object($price) && method_exists($price, 'toString')) {
             return (string) $price->toString();
@@ -106,6 +126,13 @@ trait InteractsWithWeb3
      */
     public function estimateGas(array $tx, string $blockTag = 'latest'): string
     {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm() && config('web3-laravel.driver') === 'native') {
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            $payload = array_merge(['from' => strtolower($this->address)], $tx);
+            return $evm->estimateGas($payload, $blockTag);
+        }
+
         $params = array_merge([
             'from' => strtolower($this->address),
         ], $tx);
