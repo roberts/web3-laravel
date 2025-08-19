@@ -6,10 +6,10 @@ use Elliptic\EC;
 use Illuminate\Database\Eloquent\Model;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
+use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
-use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
 class BitcoinProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter

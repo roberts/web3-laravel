@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
+use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
-use Roberts\Web3Laravel\Models\Transaction;
 use Tuupola\Base58;
 
 class SolanaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
@@ -464,7 +464,7 @@ class SolanaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapt
         try {
             $statuses = $this->rpc->getSignatureStatuses([$sig]);
             $val = $statuses['value'][0] ?? null;
-            if (!is_array($val)) {
+            if (! is_array($val)) {
                 return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
             }
             $conf = (int) ($val['confirmations'] ?? 0);
@@ -476,7 +476,10 @@ class SolanaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapt
             $confirmed = $isFinal || ($conf >= $required && $conf > 0);
 
             $receipt = null;
-            try { $receipt = $this->rpc->getTransaction($sig); } catch (\Throwable) {}
+            try {
+                $receipt = $this->rpc->getTransaction($sig);
+            } catch (\Throwable) {
+            }
 
             return [
                 'confirmed' => $confirmed,
@@ -657,10 +660,14 @@ class SolanaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapt
         }
         if (str_starts_with($val, '0x') || str_starts_with($val, '0X')) {
             $hex = substr($val, 2);
-            if ($hex === '') { return '0'; }
+            if ($hex === '') {
+                return '0';
+            }
             $g = gmp_init($hex, 16);
+
             return gmp_strval($g, 10);
         }
+
         return $val;
     }
 }

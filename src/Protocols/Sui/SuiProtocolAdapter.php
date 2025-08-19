@@ -3,13 +3,13 @@
 namespace Roberts\Web3Laravel\Protocols\Sui;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
+use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
-use Roberts\Web3Laravel\Models\Transaction;
-use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
 // not used but kept for parity
@@ -104,13 +104,15 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         try {
             $price = $this->rpc->getReferenceGasPrice();
             $meta['sui']['referenceGasPrice'] = $price;
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // Attempt to list coins; store first page for building a simple transfer
         try {
             $coins = $this->rpc->getCoins($wallet->address);
             $meta['sui']['coins'] = $coins['data'] ?? [];
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         $tx->meta = $meta;
     }
@@ -133,28 +135,34 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         }
         $coin = $coins[0];
         $coinRef = $coin['coinObjectId'] ?? $coin['coinObjectId'] ?? null;
-        if (!is_string($coinRef) || $coinRef === '') {
+        if (! is_string($coinRef) || $coinRef === '') {
             throw new \RuntimeException('Invalid SUI coin reference');
         }
 
         // Build a minimal programmable transaction bytes (simplified). In practice, use Sui SDK to build BCS bytes.
         // Here we assume txBytes are provided via meta for advanced flows; otherwise abort to avoid malformed txs.
         $txBytes = $tx->meta['sui']['txBytes'] ?? null;
-        if (!is_string($txBytes) || $txBytes === '') {
+        if (! is_string($txBytes) || $txBytes === '') {
             throw new \RuntimeException('Sui txBytes missing; building raw BCS not implemented in this package');
         }
 
         // Sign txBytes with ed25519
-        if (!extension_loaded('sodium')) { throw new \RuntimeException('ext-sodium required for Sui signing'); }
+        if (! extension_loaded('sodium')) {
+            throw new \RuntimeException('ext-sodium required for Sui signing');
+        }
         $secretHex = Crypt::decryptString($wallet->key);
         $secret = hex2bin($secretHex);
-        if ($secret === false) { throw new \RuntimeException('Invalid Sui secret key encoding'); }
+        if ($secret === false) {
+            throw new \RuntimeException('Invalid Sui secret key encoding');
+        }
         $sig = sodium_crypto_sign_detached(base64_decode($txBytes), $secret);
         $sigBase64 = base64_encode("\x00".$sig); // 0x00 = ed25519 scheme flag
 
         $res = $this->rpc->executeTransactionBlock($txBytes, [$sigBase64]);
         $digest = (string) (data_get($res, 'digest') ?? '');
-        if ($digest === '') { throw new \RuntimeException('Sui executeTransactionBlock failed'); }
+        if ($digest === '') {
+            throw new \RuntimeException('Sui executeTransactionBlock failed');
+        }
 
         return $digest;
     }

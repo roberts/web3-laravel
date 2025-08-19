@@ -140,7 +140,7 @@ class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         if ($tx->is_1559) {
             $payload['maxFeePerGas'] = $tx->fee_max;
             $payload['maxPriorityFeePerGas'] = $tx->priority_max;
-            if (!empty($tx->access_list)) {
+            if (! empty($tx->access_list)) {
                 $payload['accessList'] = json_decode($tx->access_list, true) ?: [];
             }
         } else {
@@ -154,12 +154,12 @@ class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
     {
         try {
             $receipt = $this->evm->getTransactionReceipt((string) $tx->tx_hash);
-            if (!$receipt) {
+            if (! $receipt) {
                 return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
             }
             $currentBlock = $this->evm->blockNumber();
             $receiptBlock = $receipt['blockNumber'] ?? null;
-            if (!$receiptBlock || !$currentBlock) {
+            if (! $receiptBlock || ! $currentBlock) {
                 return ['confirmed' => false, 'confirmations' => 0, 'receipt' => $receipt, 'blockNumber' => null];
             }
             $blockNum = $this->parseHexOrInt($receiptBlock);
@@ -180,8 +180,13 @@ class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 
     private function parseHexOrInt(string|int|null $v): int
     {
-        if ($v === null) { return 0; }
-        if (is_string($v) && str_starts_with($v, '0x')) { return (int) hexdec(substr($v, 2)); }
+        if ($v === null) {
+            return 0;
+        }
+        if (is_string($v) && str_starts_with($v, '0x')) {
+            return (int) hexdec(substr($v, 2));
+        }
+
         return (int) $v;
     }
 }

@@ -11,6 +11,7 @@ class SuiJsonRpcClient
     public function getReferenceGasPrice(): int
     {
         $res = $this->rpc->call('suix_getReferenceGasPrice', []);
+
         return (int) ($res ?? 0);
     }
 
@@ -19,14 +20,16 @@ class SuiJsonRpcClient
      */
     public function getCoins(string $owner, string $coinType = '0x2::sui::SUI', ?string $cursor = null, int $limit = 50): array
     {
-    $params = [['owner' => $owner, 'coinType' => $coinType, 'cursor' => $cursor, 'limit' => $limit]];
-    $res = $this->rpc->call('suix_getCoins', $params);
+        $params = [['owner' => $owner, 'coinType' => $coinType, 'cursor' => $cursor, 'limit' => $limit]];
+        $res = $this->rpc->call('suix_getCoins', $params);
+
         return is_array($res) ? $res : ['data' => [], 'nextCursor' => null, 'hasNextPage' => false];
     }
 
     public function getLatestCheckpointSequenceNumber(): int
     {
         $res = $this->rpc->call('sui_getLatestCheckpointSequenceNumber', []);
+
         return (int) ($res ?? 0);
     }
 
@@ -41,7 +44,8 @@ class SuiJsonRpcClient
             'showBalanceChanges' => false,
         ];
         $opts = array_merge($defaultOpts, $options);
-    $res = $this->rpc->call('sui_getTransactionBlock', [$digest, $opts]);
+        $res = $this->rpc->call('sui_getTransactionBlock', [$digest, $opts]);
+
         return is_array($res) ? $res : null;
     }
 
@@ -56,6 +60,7 @@ class SuiJsonRpcClient
             'showBalanceChanges' => false,
         ];
         $opts = array_merge($defaultOpts, $options);
+
         return $this->rpc->call('sui_executeTransactionBlock', [
             $txBytesBase64,
             $signatures,

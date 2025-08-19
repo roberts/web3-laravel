@@ -24,12 +24,22 @@ class TransactionCostEstimator implements EstimatorContract
 
     private function addDec(string $a, string $b): string
     {
-        $a = ltrim($a, '+'); $b = ltrim($b, '+');
-        $carry = 0; $res = ''; $i = strlen($a)-1; $j = strlen($b)-1;
-        while ($i>=0 || $j>=0 || $carry) {
-            $da = $i>=0 ? ord($a[$i]) - 48 : 0; $db = $j>=0 ? ord($b[$j]) - 48 : 0; $sum = $da+$db+$carry;
-            $res = chr(($sum % 10)+48).$res; $carry = intdiv($sum,10); $i--; $j--;
+        $a = ltrim($a, '+');
+        $b = ltrim($b, '+');
+        $carry = 0;
+        $res = '';
+        $i = strlen($a) - 1;
+        $j = strlen($b) - 1;
+        while ($i >= 0 || $j >= 0 || $carry) {
+            $da = $i >= 0 ? ord($a[$i]) - 48 : 0;
+            $db = $j >= 0 ? ord($b[$j]) - 48 : 0;
+            $sum = $da + $db + $carry;
+            $res = chr(($sum % 10) + 48).$res;
+            $carry = intdiv($sum, 10);
+            $i--;
+            $j--;
         }
+
         return ltrim($res, '0') === '' ? '0' : ltrim($res, '0');
     }
 }

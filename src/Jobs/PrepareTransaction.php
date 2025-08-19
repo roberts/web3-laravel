@@ -11,12 +11,11 @@ use Roberts\Web3Laravel\Events\TransactionFailed;
 use Roberts\Web3Laravel\Events\TransactionPrepared;
 use Roberts\Web3Laravel\Events\TransactionPreparing;
 use Roberts\Web3Laravel\Models\Transaction;
-use Roberts\Web3Laravel\Services\TransactionService;
-use Roberts\Web3Laravel\Support\Hex;
-use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
 use Roberts\Web3Laravel\Protocols\CostEstimatorRouter;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Services\BalanceService;
+use Roberts\Web3Laravel\Services\TransactionService;
 
 class PrepareTransaction implements ShouldQueue
 {
@@ -51,7 +50,10 @@ class PrepareTransaction implements ShouldQueue
         /** @var ProtocolTransactionAdapter $txAdapter */
         $txAdapter = $router->for($wallet->protocol);
         if ($txAdapter instanceof ProtocolTransactionAdapter) {
-            try { $txAdapter->prepareTransaction($tx, $wallet); } catch (\Throwable) {}
+            try {
+                $txAdapter->prepareTransaction($tx, $wallet);
+            } catch (\Throwable) {
+            }
         }
 
         // Estimate cost via per-protocol estimator and perform balance check generically
@@ -92,11 +94,19 @@ class PrepareTransaction implements ShouldQueue
     /** Compare two non-negative decimal strings (a<b => -1, a==b => 0, a>b => 1). */
     protected function decCompare(string $a, string $b): int
     {
-        $a = ltrim($a, '+'); $b = ltrim($b, '+');
-        $a = ltrim($a, '0'); $b = ltrim($b, '0');
-        $la = strlen($a); $lb = strlen($b);
-        if ($la !== $lb) { return $la < $lb ? -1 : 1; }
-        if ($a === '' && $b === '') { return 0; }
+        $a = ltrim($a, '+');
+        $b = ltrim($b, '+');
+        $a = ltrim($a, '0');
+        $b = ltrim($b, '0');
+        $la = strlen($a);
+        $lb = strlen($b);
+        if ($la !== $lb) {
+            return $la < $lb ? -1 : 1;
+        }
+        if ($a === '' && $b === '') {
+            return 0;
+        }
+
         return $a === $b ? 0 : ($a < $b ? -1 : 1);
     }
 }

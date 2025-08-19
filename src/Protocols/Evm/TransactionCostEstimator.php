@@ -31,7 +31,9 @@ class TransactionCostEstimator implements EstimatorContract
         }
 
         // 1559 defaults
-        if ($tx->is_1559 === null) { $tx->is_1559 = true; }
+        if ($tx->is_1559 === null) {
+            $tx->is_1559 = true;
+        }
         if ($tx->is_1559) {
             if (empty($tx->priority_max) || empty($tx->fee_max)) {
                 try {
@@ -73,24 +75,51 @@ class TransactionCostEstimator implements EstimatorContract
         ];
     }
 
-    protected function strip0x(string $hex): string { return str_starts_with($hex, '0x') ? substr($hex, 2) : $hex; }
+    protected function strip0x(string $hex): string
+    {
+        return str_starts_with($hex, '0x') ? substr($hex, 2) : $hex;
+    }
+
     protected function addHex(string $a, string $b): string
     {
         $a = ltrim($this->strip0x($a), '0');
         $b = ltrim($this->strip0x($b), '0');
-        $carry = 0; $res = ''; $i = strlen($a)-1; $j = strlen($b)-1;
-        while ($i>=0 || $j>=0 || $carry) {
-            $da = $i>=0 ? hexdec($a[$i]) : 0; $db = $j>=0 ? hexdec($b[$j]) : 0; $sum = $da+$db+$carry;
-            $res = dechex($sum % 16).$res; $carry = intdiv($sum,16); $i--; $j--;
+        $carry = 0;
+        $res = '';
+        $i = strlen($a) - 1;
+        $j = strlen($b) - 1;
+        while ($i >= 0 || $j >= 0 || $carry) {
+            $da = $i >= 0 ? hexdec($a[$i]) : 0;
+            $db = $j >= 0 ? hexdec($b[$j]) : 0;
+            $sum = $da + $db + $carry;
+            $res = dechex($sum % 16).$res;
+            $carry = intdiv($sum, 16);
+            $i--;
+            $j--;
         }
+
         return '0x'.($res === '' ? '0' : ltrim($res, '0'));
     }
+
     protected function mulHexByInt(string $hex, int $mult): string
     {
-        $hex = ltrim($this->strip0x($hex), '0'); if ($mult === 0 || $hex === '') { return '0x0'; }
-        $carry = 0; $res = '';
-        for ($i = strlen($hex)-1; $i>=0; $i--) { $d = hexdec($hex[$i]); $prod = $d*$mult+$carry; $res = dechex($prod%16).$res; $carry = intdiv($prod,16);} 
-        while ($carry>0) { $res = dechex($carry%16).$res; $carry = intdiv($carry,16);} 
+        $hex = ltrim($this->strip0x($hex), '0');
+        if ($mult === 0 || $hex === '') {
+            return '0x0';
+        }
+        $carry = 0;
+        $res = '';
+        for ($i = strlen($hex) - 1; $i >= 0; $i--) {
+            $d = hexdec($hex[$i]);
+            $prod = $d * $mult + $carry;
+            $res = dechex($prod % 16).$res;
+            $carry = intdiv($prod, 16);
+        }
+        while ($carry > 0) {
+            $res = dechex($carry % 16).$res;
+            $carry = intdiv($carry, 16);
+        }
+
         return '0x'.ltrim($res, '0');
     }
 }

@@ -6,24 +6,24 @@ use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
 use Roberts\Web3Laravel\Core\Provider\Endpoint;
 use Roberts\Web3Laravel\Core\Provider\Pool as ProviderPool;
 use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
-use Roberts\Web3Laravel\Protocols\Bitcoin\BitcoinProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Bitcoin\BitcoinJsonRpcClient;
+use Roberts\Web3Laravel\Protocols\Bitcoin\BitcoinProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Cardano\CardanoProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\CostEstimatorRouter;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Hedera\HederaProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\ProtocolRouter;
-use Roberts\Web3Laravel\Protocols\CostEstimatorRouter;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaService as ProtocolSolanaService;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaSigner;
-use Roberts\Web3Laravel\Protocols\Sui\SuiProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Sui\SuiJsonRpcClient;
+use Roberts\Web3Laravel\Protocols\Sui\SuiProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Ton\TonProtocolAdapter;
-use Roberts\Web3Laravel\Protocols\Xrpl\XrplProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Xrpl\XrplJsonRpcClient;
+use Roberts\Web3Laravel\Protocols\Xrpl\XrplProtocolAdapter;
 use Roberts\Web3Laravel\Services\BalanceService;
 use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
@@ -229,17 +229,17 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         $this->app->singleton(\Roberts\Web3Laravel\Protocols\Evm\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Evm\TransactionCostEstimator(
             $app->make(\Roberts\Web3Laravel\Services\TransactionService::class)
         ));
-    $this->app->singleton(\Roberts\Web3Laravel\Protocols\Solana\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Solana\TransactionCostEstimator());
+        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Solana\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Solana\TransactionCostEstimator);
         $this->app->singleton(\Roberts\Web3Laravel\Protocols\Xrpl\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Xrpl\TransactionCostEstimator(
             $app->make(\Roberts\Web3Laravel\Protocols\Xrpl\XrplJsonRpcClient::class)
         ));
         $this->app->singleton(\Roberts\Web3Laravel\Protocols\Sui\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Sui\TransactionCostEstimator(
             $app->make(\Roberts\Web3Laravel\Protocols\Sui\SuiJsonRpcClient::class)
         ));
-    $this->app->singleton(\Roberts\Web3Laravel\Protocols\Bitcoin\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Bitcoin\TransactionCostEstimator());
-        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Cardano\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Cardano\TransactionCostEstimator());
-        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Hedera\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Hedera\TransactionCostEstimator());
-        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Ton\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Ton\TransactionCostEstimator());
+        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Bitcoin\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Bitcoin\TransactionCostEstimator);
+        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Cardano\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Cardano\TransactionCostEstimator);
+        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Hedera\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Hedera\TransactionCostEstimator);
+        $this->app->singleton(\Roberts\Web3Laravel\Protocols\Ton\TransactionCostEstimator::class, fn ($app) => new \Roberts\Web3Laravel\Protocols\Ton\TransactionCostEstimator);
 
         // Bind Bitcoin JSON-RPC client (optional)
         $this->app->singleton(BitcoinJsonRpcClient::class, function ($app) {

@@ -10,9 +10,9 @@ use Illuminate\Queue\SerializesModels;
 use Roberts\Web3Laravel\Events\TransactionFailed;
 use Roberts\Web3Laravel\Events\TransactionSubmitted;
 use Roberts\Web3Laravel\Models\Transaction;
-use Roberts\Web3Laravel\Services\TransactionService;
-use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
+use Roberts\Web3Laravel\Services\TransactionService;
 
 class SubmitTransaction implements ShouldQueue
 {

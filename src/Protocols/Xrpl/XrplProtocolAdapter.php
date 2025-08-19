@@ -5,10 +5,10 @@ namespace Roberts\Web3Laravel\Protocols\Xrpl;
 use Illuminate\Database\Eloquent\Model;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
+use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
-use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
 class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
@@ -103,13 +103,17 @@ class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         try {
             $info = $this->rpc->accountInfo($wallet->address);
             $seq = (int) data_get($info, 'account_data.Sequence', 0);
-            if ($seq > 0) { $meta['xrpl']['Sequence'] = $seq; }
-        } catch (\Throwable) {}
+            if ($seq > 0) {
+                $meta['xrpl']['Sequence'] = $seq;
+            }
+        } catch (\Throwable) {
+        }
         try {
             $fee = $this->rpc->fee();
             $open = (string) (data_get($fee, 'drops.open_ledger_fee') ?? data_get($fee, 'drops.minimum_fee') ?? '12');
             $meta['xrpl']['Fee'] = $open; // in drops as string
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
         $tx->meta = $meta;
     }
 
@@ -132,11 +136,13 @@ class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
             'Amount' => (string) $amount,
             'Fee' => (string) $fee,
         ];
-        if ($sequence) { $payload['Sequence'] = (int) $sequence; }
+        if ($sequence) {
+            $payload['Sequence'] = (int) $sequence;
+        }
 
         // Look for a server-side signing secret in wallet meta (NOT recommended for production)
         $secret = $wallet->meta['xrpl']['secret'] ?? null;
-        if (!is_string($secret) || $secret === '') {
+        if (! is_string($secret) || $secret === '') {
             throw new \RuntimeException('XRPL signing not configured; client-side signing not implemented yet');
         }
         $res = $this->rpc->sign($payload, ['secret' => $secret]);
@@ -162,7 +168,7 @@ class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         }
         try {
             $res = $this->rpc->tx($hash);
-            if (!$res) {
+            if (! $res) {
                 return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
             }
             $validated = (bool) ($res['validated'] ?? false);
