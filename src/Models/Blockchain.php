@@ -33,6 +33,6 @@ class Blockchain extends Model
         'native_decimals' => 'integer',
         'is_active' => 'boolean',
         'is_default' => 'boolean',
-    'protocol' => BlockchainProtocol::class,
+        'protocol' => BlockchainProtocol::class,
     ];
 }

@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
-use Tuupola\Base58; 
+use Tuupola\Base58;
 
 class SolanaService
 {
@@ -26,7 +26,7 @@ class SolanaService
         $public = \sodium_crypto_sign_publickey($kp); // 32 bytes
 
         // Address is base58 of the public key
-    $address = (new Base58(['characters' => Base58::BITCOIN]))->encode($public);
+        $address = (new Base58(['characters' => Base58::BITCOIN]))->encode($public);
 
         // Encrypt the secret for storage (hex-encode to be safe in text storage)
         $encryptedKey = Crypt::encryptString(bin2hex($secret));

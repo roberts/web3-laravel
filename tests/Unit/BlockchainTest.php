@@ -16,7 +16,7 @@ it('creates a blockchain with defaults and casts', function () {
 
     expect($chain->id)->not()->toBeNull()
         ->and($chain->chain_id)->toBeInt()->toBe(8453)
-    ->and($chain->protocol->value)->toBe('evm')
+        ->and($chain->protocol->value)->toBe('evm')
         ->and($chain->supports_eip1559)->toBeTrue()
         ->and($chain->native_decimals)->toBeInt()->toBe(18)
         ->and($chain->is_active)->toBeTrue()

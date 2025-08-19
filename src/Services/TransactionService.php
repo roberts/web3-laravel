@@ -78,7 +78,7 @@ class TransactionService
         $to = $tx['to'] ?? null;
         $value = $tx['value'] ?? 0;
         $data = $tx['data'] ?? '0x';
-    $chainId = $tx['chainId'] ?? config('web3-laravel.default_chain_id');
+        $chainId = $tx['chainId'] ?? config('web3-laravel.default_chain_id');
 
         if ($gasLimit === null) {
             $est = $this->ethCall($eth, 'estimateGas', [[

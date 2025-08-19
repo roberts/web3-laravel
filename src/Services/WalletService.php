@@ -12,9 +12,9 @@ use Web3\Utils as Web3Utils;
 class WalletService
 {
     /**
-    * Generate a new EVM wallet (secp256k1) and persist it.
-    * - Derives Ethereum-compatible address from the generated private key.
-    * - Encrypts key via Wallet mutator.
+     * Generate a new EVM wallet (secp256k1) and persist it.
+     * - Derives Ethereum-compatible address from the generated private key.
+     * - Encrypts key via Wallet mutator.
      */
     public function create(array $attributes = [], ?Model $owner = null, ?Blockchain $blockchain = null): Wallet
     {
@@ -54,7 +54,7 @@ class WalletService
      */
     public function createForBlockchain(Blockchain $blockchain, array $attributes = [], ?Model $owner = null): Wallet
     {
-    if ($blockchain->protocol->isSolana()) {
+        if ($blockchain->protocol->isSolana()) {
             // Pass owner via attributes for Solana service
             if ($owner instanceof Model) {
                 $attributes['owner_id'] = $owner->getKey();
