@@ -13,7 +13,7 @@ use Roberts\Web3Laravel\Support\Address;
 use Roberts\Web3Laravel\Support\Hex;
 use Roberts\Web3Laravel\Support\Keccak;
 
-class EvmProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter, \Roberts\Web3Laravel\Protocols\Contracts\HasSequence
+class EvmProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\HasSequence, ProtocolAdapter, ProtocolTransactionAdapter
 {
     public function __construct(private EvmClientInterface $evm) {}
 

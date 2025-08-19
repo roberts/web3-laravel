@@ -29,9 +29,9 @@ use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 use Roberts\Web3Laravel\Services\Keys\NativeKeyEngine;
+use Roberts\Web3Laravel\Services\SequenceService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
-use Roberts\Web3Laravel\Services\SequenceService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 

@@ -4,10 +4,10 @@ namespace Roberts\Web3Laravel\Services;
 
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
-use Roberts\Web3Laravel\Protocols\Xrpl\XrplJsonRpcClient;
-use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Protocols\Contracts\HasSequence;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
+use Roberts\Web3Laravel\Protocols\Xrpl\XrplJsonRpcClient;
 
 class SequenceService
 {

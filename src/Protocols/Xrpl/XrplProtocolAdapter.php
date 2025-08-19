@@ -11,7 +11,7 @@ use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
-class XrplProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter, \Roberts\Web3Laravel\Protocols\Contracts\HasSequence
+class XrplProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\HasSequence, ProtocolAdapter, ProtocolTransactionAdapter
 {
     public function __construct(private KeyEngineInterface $keys, private XrplJsonRpcClient $rpc) {}
 

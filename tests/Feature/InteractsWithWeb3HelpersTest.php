@@ -23,15 +23,47 @@ it('validates XRPL address via trait helper (non-empty)', function () {
 it('sequence() returns EVM hex nonce via trait', function () {
     // Fake EVM client
     app()->bind(EvmClientInterface::class, function () {
-        return new class implements EvmClientInterface {
-            public function getBalance(string $address, string $blockTag = 'latest'): string { return '0x0'; }
-            public function gasPrice(): string { return '0x1'; }
-            public function maxPriorityFeePerGas(): string { return '0x1'; }
-            public function estimateGas(array $tx, string $blockTag = 'latest'): string { return '0x5208'; }
-            public function getTransactionCount(string $address, string $blockTag = 'latest'): string { return '0x7'; }
-            public function sendRawTransaction(string $raw): string { return '0xhash'; }
-            public function blockNumber(): string { return '0x1'; }
-            public function getTransactionReceipt(string $hash): ?array { return null; }
+        return new class implements EvmClientInterface
+        {
+            public function getBalance(string $address, string $blockTag = 'latest'): string
+            {
+                return '0x0';
+            }
+
+            public function gasPrice(): string
+            {
+                return '0x1';
+            }
+
+            public function maxPriorityFeePerGas(): string
+            {
+                return '0x1';
+            }
+
+            public function estimateGas(array $tx, string $blockTag = 'latest'): string
+            {
+                return '0x5208';
+            }
+
+            public function getTransactionCount(string $address, string $blockTag = 'latest'): string
+            {
+                return '0x7';
+            }
+
+            public function sendRawTransaction(string $raw): string
+            {
+                return '0xhash';
+            }
+
+            public function blockNumber(): string
+            {
+                return '0x1';
+            }
+
+            public function getTransactionReceipt(string $hash): ?array
+            {
+                return null;
+            }
         };
     });
 
@@ -41,8 +73,12 @@ it('sequence() returns EVM hex nonce via trait', function () {
 
 it('sequence() returns XRPL integer via trait', function () {
     app()->bind(XrplJsonRpcClient::class, function () {
-        return new class {
-            public function accountInfo(string $address): array { return ['account_data' => ['Sequence' => 9, 'Balance' => '0']]; }
+        return new class
+        {
+            public function accountInfo(string $address): array
+            {
+                return ['account_data' => ['Sequence' => 9, 'Balance' => '0']];
+            }
         };
     });
     $wallet = Wallet::factory()->create(['protocol' => BlockchainProtocol::XRPL, 'address' => 'rTEST']);
@@ -52,15 +88,47 @@ it('sequence() returns XRPL integer via trait', function () {
 it('transferNative uses EVM adapter and returns tx hash', function () {
     // Fake EVM client for raw send path
     app()->bind(EvmClientInterface::class, function () {
-        return new class implements EvmClientInterface {
-            public function getBalance(string $address, string $blockTag = 'latest'): string { return '0x0'; }
-            public function gasPrice(): string { return '0x1'; }
-            public function maxPriorityFeePerGas(): string { return '0x1'; }
-            public function estimateGas(array $tx, string $blockTag = 'latest'): string { return '0x5208'; }
-            public function getTransactionCount(string $address, string $blockTag = 'latest'): string { return '0x1'; }
-            public function sendRawTransaction(string $raw): string { return '0xDEADBEEF'; }
-            public function blockNumber(): string { return '0x1'; }
-            public function getTransactionReceipt(string $hash): ?array { return null; }
+        return new class implements EvmClientInterface
+        {
+            public function getBalance(string $address, string $blockTag = 'latest'): string
+            {
+                return '0x0';
+            }
+
+            public function gasPrice(): string
+            {
+                return '0x1';
+            }
+
+            public function maxPriorityFeePerGas(): string
+            {
+                return '0x1';
+            }
+
+            public function estimateGas(array $tx, string $blockTag = 'latest'): string
+            {
+                return '0x5208';
+            }
+
+            public function getTransactionCount(string $address, string $blockTag = 'latest'): string
+            {
+                return '0x1';
+            }
+
+            public function sendRawTransaction(string $raw): string
+            {
+                return '0xDEADBEEF';
+            }
+
+            public function blockNumber(): string
+            {
+                return '0x1';
+            }
+
+            public function getTransactionReceipt(string $hash): ?array
+            {
+                return null;
+            }
         };
     });
 
