@@ -2,73 +2,37 @@
 
 namespace Roberts\Web3Laravel\Services;
 
-use Elliptic\EC;
 use Illuminate\Database\Eloquent\Model;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Support\Hex;
-use Roberts\Web3Laravel\Support\Keccak;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 
 class WalletService
 {
-    /**
-     * Generate a new EVM wallet (secp256k1) and persist it.
-     * - Derives Ethereum-compatible address from the generated private key.
-     * - Encrypts key via Wallet mutator.
-     */
+    /** Create and persist a wallet using the appropriate protocol adapter. */
     public function create(array $attributes = [], ?Model $owner = null, ?Blockchain $blockchain = null): Wallet
     {
-        $ec = new EC('secp256k1');
-        $keyPair = $ec->genKeyPair();
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
 
-        // private key: 32 bytes hex, 0x-prefixed
-        $privHex = '0x'.str_pad($keyPair->getPrivate('hex'), 64, '0', STR_PAD_LEFT);
+        $protocol = $blockchain->protocol ?? BlockchainProtocol::EVM;
+        $adapter = $router->for($protocol);
 
-        // public key (uncompressed, hex, without 0x04 prefix -> use x+y)
-        $pub = $keyPair->getPublic(false, 'hex'); // 04 + x(64) + y(64)
-        $pubNoPrefix = substr($pub, 2);
-
-        // address = last 20 bytes of keccak256(public_key)
-        $hash = Keccak::hash($pubNoPrefix, true); // 0x-prefixed keccak of public key (no 0x)
-        $address = '0x'.substr(Hex::stripZero($hash), -40);
-        $address = strtolower($address);
-
-        $data = array_merge([
-            'address' => $address,
-            'key' => $privHex, // encrypted by mutator
-            'protocol' => $blockchain ? $blockchain->protocol : BlockchainProtocol::EVM,
-            'is_active' => true,
-        ], $attributes);
-
-        if ($owner instanceof Model) {
-            $data['owner_id'] = $owner->getKey();
-        }
-
-        return Wallet::create($data);
+        return $adapter->createWallet($attributes, $owner, $blockchain);
     }
 
     /**
      * Create a wallet for a specific blockchain, routing to the correct protocol implementation.
-     * - EVM chains use secp256k1 generation (this service).
-     * - Solana uses ed25519 via SolanaService.
+     * Uses the ProtocolRouter; Solana/EVM specifics are handled in their adapters.
      */
     public function createForBlockchain(Blockchain $blockchain, array $attributes = [], ?Model $owner = null): Wallet
     {
-        if ($blockchain->protocol->isSolana()) {
-            // Pass owner via attributes for Solana service
-            if ($owner instanceof Model) {
-                $attributes['owner_id'] = $owner->getKey();
-            }
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($blockchain->protocol);
 
-            /** @var \Roberts\Web3Laravel\Services\SolanaService $solana */
-            $solana = app(\Roberts\Web3Laravel\Services\SolanaService::class);
-
-            return $solana->createWallet($blockchain->getKey(), $attributes);
-        }
-
-        // Default to EVM
-        return $this->create($attributes, $owner, $blockchain);
+        return $adapter->createWallet($attributes, $owner, $blockchain);
     }
 
     /**
@@ -84,16 +48,10 @@ class WalletService
     /** Create a wallet by protocol, choosing defaults for each chain family. */
     public function createForProtocol(BlockchainProtocol $protocol, array $attributes = [], ?Model $owner = null): Wallet
     {
-        if ($protocol->isSolana()) {
-            if ($owner instanceof Model) {
-                $attributes['owner_id'] = $owner->getKey();
-            }
-            /** @var \Roberts\Web3Laravel\Services\SolanaService $solana */
-            $solana = app(\Roberts\Web3Laravel\Services\SolanaService::class);
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($protocol);
 
-            return $solana->createWallet(null, $attributes);
-        }
-
-        return $this->create($attributes, $owner, null);
+        return $adapter->createWallet($attributes, $owner, null);
     }
 }

@@ -4,7 +4,7 @@ use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Contract;
 use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 
-it('normalizes address and creator to lowercase', function () {
+it('normalizes address and creator to lowercase (EVM)', function () {
     $chain = Blockchain::factory()->create();
     $contract = Contract::factory()->create([
         'blockchain_id' => $chain->id,

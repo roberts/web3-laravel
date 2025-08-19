@@ -8,9 +8,15 @@ use Roberts\Web3Laravel\Core\Provider\Pool as ProviderPool;
 use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
+use Roberts\Web3Laravel\Protocols\Evm\EvmProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaService as ProtocolSolanaService;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaSigner;
+use Roberts\Web3Laravel\Services\BalanceService;
 use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
-use Roberts\Web3Laravel\Services\SolanaService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
 use Spatie\LaravelPackageTools\Package;
@@ -42,6 +48,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 \Roberts\Web3Laravel\Commands\TokenInfoCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenMintCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenTransferCommand::class,
+                \Roberts\Web3Laravel\Commands\TokenApproveCommand::class,
+                \Roberts\Web3Laravel\Commands\NativeTransferCommand::class,
                 \Roberts\Web3Laravel\Console\Commands\WatchConfirmationsCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletTokenSnapshotCommand::class,
             ]);
@@ -68,7 +76,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(\Roberts\Web3Laravel\Services\WalletTokenService::class, function ($app) {
             return new \Roberts\Web3Laravel\Services\WalletTokenService(
-                $app->make(TokenService::class)
+                $app->make(TokenService::class),
+                $app->make(BalanceService::class)
             );
         });
 
@@ -76,8 +85,32 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             return new KeyReleaseService;
         });
 
-        $this->app->singleton(SolanaService::class, function ($app) {
-            return new SolanaService;
+        // SolanaService removed in favor of protocol adapter usage
+
+        $this->app->singleton(BalanceService::class, function ($app) {
+            return new BalanceService($app->make(\Roberts\Web3Laravel\Protocols\ProtocolRouter::class));
+        });
+
+        // Protocol-scoped Solana service (optional facade around adapter)
+        $this->app->singleton(ProtocolSolanaService::class, function ($app) {
+            return new ProtocolSolanaService($app->make(\Roberts\Web3Laravel\Protocols\ProtocolRouter::class));
+        });
+
+        // Solana protocol adapter
+        $this->app->singleton(SolanaSigner::class, function ($app) {
+            return new SolanaSigner;
+        });
+
+        $this->app->singleton(SolanaProtocolAdapter::class, function ($app) {
+            return new SolanaProtocolAdapter(
+                $app->make(SolanaJsonRpcClient::class),
+                $app->make(SolanaSigner::class)
+            );
+        });
+
+        // EVM protocol adapter
+        $this->app->singleton(EvmProtocolAdapter::class, function ($app) {
+            return new EvmProtocolAdapter($app->make(EvmClientInterface::class));
         });
 
         // Bind native EVM client (web3.php fully removed)
@@ -102,6 +135,30 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             $rpc = new PooledHttpClient($pool, $timeout, $retries, $backoff, $headers);
 
             return new EvmJsonRpcClient($rpc);
+        });
+
+        // Bind Solana JSON-RPC client using the same pooled HTTP client
+        $this->app->singleton(SolanaJsonRpcClient::class, function ($app) {
+            $timeout = (int) config('web3-laravel.request_timeout', 10);
+            $retries = (int) data_get(config('web3-laravel.rpc'), 'retries', 2);
+            $backoff = (int) data_get(config('web3-laravel.rpc'), 'backoff_ms', 200);
+            $headers = (array) data_get(config('web3-laravel.rpc'), 'headers', []);
+            $default = (string) data_get(config('web3-laravel.solana'), 'default_rpc', 'https://api.mainnet-beta.solana.com');
+
+            $endpoints = [new Endpoint($default, 1, $headers)];
+            $pool = new ProviderPool($endpoints);
+            $rpc = new PooledHttpClient($pool, $timeout, $retries, $backoff, $headers);
+
+            return new SolanaJsonRpcClient($rpc);
+        });
+
+        // Protocol router to dispatch to the right adapter
+        $this->app->singleton(ProtocolRouter::class, function ($app) {
+            $router = new ProtocolRouter;
+            $router->register($app->make(EvmProtocolAdapter::class));
+            $router->register($app->make(SolanaProtocolAdapter::class));
+
+            return $router;
         });
 
         // Register event service provider for package

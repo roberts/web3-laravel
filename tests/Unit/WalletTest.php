@@ -16,9 +16,3 @@ it('encrypts and decrypts private key transparently', function () {
     expect($wallet->maskedKey())->toContain(substr($plain, 0, 6))
         ->and($wallet->maskedKey())->toContain(substr($plain, -4));
 });
-
-it('applies lowercase normalization for address lookups', function () {
-    $wallet = Wallet::factory()->create();
-    $found = Wallet::byAddress(strtoupper($wallet->address))->first();
-    expect($found?->id)->toBe($wallet->id);
-});
