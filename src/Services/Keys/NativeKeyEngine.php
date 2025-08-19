@@ -42,8 +42,8 @@ class NativeKeyEngine implements KeyEngineInterface
             BlockchainProtocol::SUI,
             BlockchainProtocol::CARDANO,
             BlockchainProtocol::HEDERA,
-            BlockchainProtocol::XRPL => $this->deriveEd25519Slip10($seed, $path),
-
+            BlockchainProtocol::XRPL,
+            BlockchainProtocol::TON => $this->deriveEd25519Slip10($seed, $path),
             BlockchainProtocol::BITCOIN,
             BlockchainProtocol::EVM => $this->deriveSecp256k1Bip32($seed, $path),
         };
@@ -217,10 +217,20 @@ class NativeKeyEngine implements KeyEngineInterface
                 $priv = '0x'.strtolower(bin2hex(random_bytes(32)));
 
                 return [$priv, ''];
-        }
+            case BlockchainProtocol::TON:
+                if (! extension_loaded('sodium')) {
+                    throw new \RuntimeException('ext-sodium required for ed25519');
+                }
+                $kp = \sodium_crypto_sign_keypair();
+                $sk = \sodium_crypto_sign_secretkey($kp);
+                $pk = \sodium_crypto_sign_publickey($kp);
 
-        // @phpstan-ignore-next-line exhaustive switch satisfied; fallback for runtime safety
-        return ['0x'.strtolower(bin2hex(random_bytes(32))), ''];
+                return [bin2hex($sk), $pk];
+            default:
+                // Fallback for future enum additions
+                return ['0x'.strtolower(bin2hex(random_bytes(32))), ''];
+    }
+
     }
 
     public function publicKeyToAddress(BlockchainProtocol $protocol, string $network, string $scheme, string $publicKeyBytes): string
@@ -257,12 +267,16 @@ class NativeKeyEngine implements KeyEngineInterface
                 $hrp = ($network === 'testnet' || $network === 'signet' || $network === 'regtest') ? 'tb' : 'bc';
 
                 return Bech32::encodeSegwit($hrp, 0, $rip);
+            case BlockchainProtocol::TON:
+                // Placeholder TON address: base64url(workchain||sha256(pubkey)[:32])
+                $hash = hash('sha256', $publicKeyBytes, true);
+                $raw = "\x00".substr($hash, 0, 32);
+                return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
             case BlockchainProtocol::EVM:
                 // EVM address derives from Keccak(pubkey); handled elsewhere
                 return '';
-        }
-
-        // @phpstan-ignore-next-line exhaustive switch satisfied; fallback for runtime safety
-        return '';
+            default:
+                return '';
+    }
     }
 }

@@ -11,6 +11,7 @@ enum BlockchainProtocol: string
     case XRPL = 'xrpl';
     case CARDANO = 'cardano';
     case HEDERA = 'hedera';
+    case TON = 'ton';
 
     public function isEvm(): bool
     {
@@ -45,5 +46,10 @@ enum BlockchainProtocol: string
     public function isHedera(): bool
     {
         return $this === self::HEDERA;
+    }
+
+    public function isTon(): bool
+    {
+        return $this === self::TON;
     }
 }

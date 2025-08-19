@@ -1,18 +1,34 @@
 <?php
 
+use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Wallet;
 
-it('encrypts and decrypts private key transparently', function () {
-    $plain = '0x'.strtolower(bin2hex(random_bytes(32)));
-    $wallet = Wallet::factory()->create(['key' => $plain]);
+dataset('protocols', [
+    BlockchainProtocol::EVM,
+    BlockchainProtocol::SOLANA,
+    BlockchainProtocol::BITCOIN,
+    BlockchainProtocol::SUI,
+    BlockchainProtocol::XRPL,
+    BlockchainProtocol::CARDANO,
+    BlockchainProtocol::HEDERA,
+    BlockchainProtocol::TON,
+]);
 
-    // Stored value should not equal plain
+it('encrypts and decrypts private key transparently across protocols', function (BlockchainProtocol $protocol) {
+    $plain = '0x'.strtolower(bin2hex(random_bytes(32)));
+    $wallet = Wallet::factory()->create([
+        'key' => $plain,
+        'protocol' => $protocol,
+    ]);
+
+    // Stored encrypted value should not equal plain
     expect($wallet->getAttributes()['key'])->not()->toBe($plain);
 
     // Decrypt helper returns original
     expect($wallet->decryptKey())->toBe($plain);
 
-    // Masked key is safe
-    expect($wallet->maskedKey())->toContain(substr($plain, 0, 6))
-        ->and($wallet->maskedKey())->toContain(substr($plain, -4));
-});
+    // Masked key includes start and end fragments only
+    $masked = $wallet->maskedKey();
+    expect($masked)->toContain(substr($plain, 0, 6))
+        ->and($masked)->toContain(substr($plain, -4));
+})->with('protocols');

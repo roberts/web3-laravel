@@ -6,6 +6,7 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo as EloquentBelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Enums\WalletType;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Support\Address;
 
 /**
@@ -71,6 +73,64 @@ class Wallet extends Model
     {
         return $this->hasMany(WalletNft::class);
     }
+
+    // ------------------------------
+    // Creation helpers (chain-agnostic, via ProtocolRouter)
+    // ------------------------------
+
+    /**
+     * Create a wallet for the given protocol using the registered adapter.
+     * Accepts optional owner and blockchain to influence defaults like network/decimals.
+     */
+    public static function createForProtocol(BlockchainProtocol $protocol, array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+
+        return $router->for($protocol)->createWallet($attributes, $owner, $blockchain);
+    }
+
+    /** Create a wallet for the specified blockchain (uses its protocol). */
+    public static function createForBlockchain(Blockchain $blockchain, array $attributes = [], ?EloquentModel $owner = null): self
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+
+        return $router->for($blockchain->protocol)->createWallet($attributes, $owner, $blockchain);
+    }
+
+    /** Convenience: create by protocol string value (e.g., 'evm','solana','bitcoin',...). */
+    public static function createForProtocolValue(string $protocol, array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    {
+        $proto = BlockchainProtocol::from(strtolower($protocol));
+
+        return self::createForProtocol($proto, $attributes, $owner, $blockchain);
+    }
+
+    // Named convenience methods per protocol
+    public static function evm(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::EVM, $attributes, $owner, $blockchain); }
+
+    public static function solana(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::SOLANA, $attributes, $owner, $blockchain); }
+
+    public static function bitcoin(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::BITCOIN, $attributes, $owner, $blockchain); }
+
+    public static function sui(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::SUI, $attributes, $owner, $blockchain); }
+
+    public static function xrpl(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::XRPL, $attributes, $owner, $blockchain); }
+
+    public static function cardano(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::CARDANO, $attributes, $owner, $blockchain); }
+
+    public static function hedera(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::HEDERA, $attributes, $owner, $blockchain); }
+
+    public static function ton(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
+    { return self::createForProtocol(BlockchainProtocol::TON, $attributes, $owner, $blockchain); }
 
     /**
      * Get all ERC-20 balances tracked for this wallet.
