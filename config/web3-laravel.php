@@ -64,7 +64,7 @@ return [
     // Solana defaults (optional): used for Solana wallet creation when a blockchain row isn't provided
     'solana' => [
         'default_rpc' => 'https://api.mainnet-beta.solana.com',
-    // When true, automatically create missing Associated Token Accounts (ATAs) during approve/transfer flows
-    'auto_create_atas' => false,
+        // When true, automatically create missing Associated Token Accounts (ATAs) during approve/transfer flows
+        'auto_create_atas' => false,
     ],
 ];

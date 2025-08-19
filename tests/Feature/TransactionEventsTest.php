@@ -1,6 +1,9 @@
 <?php
 
-// Root remains protocol-neutral; events/assertions are validated in protocol suites.
-it('has transaction events covered under protocol-specific tests', function () {
-    expect(true)->toBeTrue();
+use Roberts\Web3Laravel\Models\Transaction;
+
+// Protocol-agnostic: creating a transaction works; detailed flows tested per protocol.
+it('can create a transaction model', function () {
+    $tx = Transaction::factory()->create();
+    expect($tx->id)->toBeInt();
 });

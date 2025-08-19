@@ -316,10 +316,11 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         $decimals = (int) ($token->decimals ?? 0);
         $ixData = chr(13).$amountLe.chr($decimals);
 
-    // Account keys order matters: [signer(owner), writable unsigned (owner ATA), readonly unsigned (mint, delegate), program]
-    $accountKeys = [$ownerPub, $ownerAta, $mintPub, $spenderPub, $tokenProgramPub];
-    // Instruction account indices into accountKeys: source(1), mint(2), delegate(3), owner(0)
-    return $this->submitSingleProgramInstruction($owner, $accountKeys, $ixData, count($accountKeys) - 1, [1, 2, 3, 0]);
+        // Account keys order matters: [signer(owner), writable unsigned (owner ATA), readonly unsigned (mint, delegate), program]
+        $accountKeys = [$ownerPub, $ownerAta, $mintPub, $spenderPub, $tokenProgramPub];
+
+        // Instruction account indices into accountKeys: source(1), mint(2), delegate(3), owner(0)
+        return $this->submitSingleProgramInstruction($owner, $accountKeys, $ixData, count($accountKeys) - 1, [1, 2, 3, 0]);
     }
 
     public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress): string
@@ -349,11 +350,11 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         // Revoke instruction (u8 5)
         $ixData = chr(5);
 
-    // Account keys: [signer(owner), writable unsigned (owner ATA), program]
-    $accountKeys = [$ownerPub, $ownerAta, $tokenProgramPub];
+        // Account keys: [signer(owner), writable unsigned (owner ATA), program]
+        $accountKeys = [$ownerPub, $ownerAta, $tokenProgramPub];
 
-    // For revoke, instruction accounts are: source (1), owner (0)
-    return $this->submitSingleProgramInstruction($owner, $accountKeys, $ixData, count($accountKeys) - 1, [1, 0]);
+        // For revoke, instruction accounts are: source (1), owner (0)
+        return $this->submitSingleProgramInstruction($owner, $accountKeys, $ixData, count($accountKeys) - 1, [1, 0]);
     }
 
     /** Shortvec (compact-u16) length encoding used by Solana. */
@@ -488,10 +489,10 @@ class SolanaProtocolAdapter implements ProtocolAdapter
             throw new \RuntimeException('Invalid Solana secret key encoding');
         }
 
-    // Header: 1 signer, 0 ro signed. Readonly unsigned = total accounts - writable unsigned - readonly signed - signers
-    // We keep it simple by assuming only first key is signer and writable, program id is readonly unsigned.
-    $readonlyUnsigned = max(0, count($accountKeys) - 2); // signer + one writable unsigned (e.g., source) + rest readonly
-    $header = chr(1).chr(0).chr($readonlyUnsigned);
+        // Header: 1 signer, 0 ro signed. Readonly unsigned = total accounts - writable unsigned - readonly signed - signers
+        // We keep it simple by assuming only first key is signer and writable, program id is readonly unsigned.
+        $readonlyUnsigned = max(0, count($accountKeys) - 2); // signer + one writable unsigned (e.g., source) + rest readonly
+        $header = chr(1).chr(0).chr($readonlyUnsigned);
         $acctSection = $this->shortvec(count($accountKeys)).implode('', $accountKeys);
 
         // Instruction uses provided account indices if given; otherwise all non-program accounts in order

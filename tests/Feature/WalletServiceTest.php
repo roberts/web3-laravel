@@ -1,6 +1,12 @@
 <?php
 
-// Chain-agnostic root: wallet creation specifics validated under Feature/Evm and Feature/Solana.
-it('creates wallets per protocol in protocol-specific suites', function () {
-    expect(true)->toBeTrue();
+use Roberts\Web3Laravel\Models\Wallet;
+
+// Chain-agnostic root: ensure we can create a wallet without protocol assumptions
+it('creates a wallet record with required defaults', function () {
+    $wallet = Wallet::factory()->create();
+
+    expect($wallet->id)->toBeInt()
+        ->and($wallet->address)->toBeString()
+        ->and($wallet->is_active)->toBeTrue();
 });
