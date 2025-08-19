@@ -19,6 +19,13 @@ use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
+use Roberts\Web3Laravel\Protocols\Bitcoin\BitcoinProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Sui\SuiProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Xrpl\XrplProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Cardano\CardanoProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Hedera\HederaProtocolAdapter;
+use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
+use Roberts\Web3Laravel\Services\Keys\NativeKeyEngine;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -157,8 +164,18 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             $router = new ProtocolRouter;
             $router->register($app->make(EvmProtocolAdapter::class));
             $router->register($app->make(SolanaProtocolAdapter::class));
+            $router->register($app->make(BitcoinProtocolAdapter::class));
+            $router->register($app->make(SuiProtocolAdapter::class));
+            $router->register($app->make(XrplProtocolAdapter::class));
+            $router->register($app->make(CardanoProtocolAdapter::class));
+            $router->register($app->make(HederaProtocolAdapter::class));
 
             return $router;
+        });
+
+        // Key engine binding
+        $this->app->singleton(KeyEngineInterface::class, function () {
+            return new NativeKeyEngine;
         });
 
         // Register event service provider for package

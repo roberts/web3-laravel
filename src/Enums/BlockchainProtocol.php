@@ -6,6 +6,11 @@ enum BlockchainProtocol: string
 {
     case EVM = 'evm';
     case SOLANA = 'solana';
+    case BITCOIN = 'bitcoin';
+    case SUI = 'sui';
+    case XRPL = 'xrpl';
+    case CARDANO = 'cardano';
+    case HEDERA = 'hedera';
 
     public function isEvm(): bool
     {
@@ -15,5 +20,30 @@ enum BlockchainProtocol: string
     public function isSolana(): bool
     {
         return $this === self::SOLANA;
+    }
+
+    public function isBitcoin(): bool
+    {
+        return $this === self::BITCOIN;
+    }
+
+    public function isSui(): bool
+    {
+        return $this === self::SUI;
+    }
+
+    public function isXrpl(): bool
+    {
+        return $this === self::XRPL;
+    }
+
+    public function isCardano(): bool
+    {
+        return $this === self::CARDANO;
+    }
+
+    public function isHedera(): bool
+    {
+        return $this === self::HEDERA;
     }
 }
