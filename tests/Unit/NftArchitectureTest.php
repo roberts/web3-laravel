@@ -41,10 +41,11 @@ it('token format and parse amounts correctly', function () {
     // Test formatting
     expect($token->formatAmount('1000000000000000000'))->toBe('1');
     expect($token->formatAmount('1500000000000000000'))->toBe('1.5');
-    expect($token->formatAmount('100000000000000000'))->toBe('0.1'); // Fixed expectation
+    // Works with fractional amounts
+    expect($token->formatAmount('100000000000000000'))->toBe('0.1');
 
     // Test parsing
     expect($token->parseAmount('1'))->toBe('1000000000000000000');
     expect($token->parseAmount('1.5'))->toBe('1500000000000000000');
-    expect($token->parseAmount('0.1'))->toBe('100000000000000000'); // Fixed expectation
+    expect($token->parseAmount('0.1'))->toBe('100000000000000000');
 });

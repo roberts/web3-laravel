@@ -75,7 +75,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(\Roberts\Web3Laravel\Services\WalletTokenService::class, function ($app) {
             return new \Roberts\Web3Laravel\Services\WalletTokenService(
-                $app->make(TokenService::class)
+                $app->make(TokenService::class),
+                $app->make(BalanceService::class)
             );
         });
 

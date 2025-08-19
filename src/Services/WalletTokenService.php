@@ -9,10 +9,11 @@ use Roberts\Web3Laravel\Events\WalletTokenBalanceUpdated;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Models\WalletToken;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 
 class WalletTokenService
 {
-    public function __construct(protected TokenService $tokenService) {}
+    public function __construct(protected TokenService $tokenService, protected BalanceService $balanceService) {}
 
     /**
      * Snapshot balances for a set of wallet addresses against a token.
@@ -96,16 +97,20 @@ class WalletTokenService
      */
     public function snapshotAllowance(Token $token, Wallet $owner, string $spender): string
     {
-        $current = $this->tokenService->allowance($token, $owner->address, $spender);
+    /** @var ProtocolRouter $router */
+    $router = app(ProtocolRouter::class);
+    $adapter = $router->for($owner->protocol);
+    $spenderNormalized = $adapter->normalizeAddress($spender);
+    $current = $this->balanceService->allowance($token, $owner->address, $spenderNormalized, $owner);
 
-        $meta = ['spender' => strtolower($spender)];
+    $meta = ['spender' => $spenderNormalized];
 
         $row = WalletToken::firstOrCreate(
             ['wallet_id' => $owner->id, 'token_id' => $token->id],
             ['balance' => '0']
         );
 
-        $old = (string) ($row->meta['allowances'][$meta['spender']] ?? '0');
+    $old = (string) ($row->meta['allowances'][$meta['spender']] ?? '0');
 
         if ($old !== (string) $current) {
             $row->meta = array_replace_recursive($row->meta ?? [], [

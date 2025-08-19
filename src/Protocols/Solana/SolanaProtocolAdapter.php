@@ -200,14 +200,15 @@ class SolanaProtocolAdapter implements ProtocolAdapter
             throw new \InvalidArgumentException('Invalid public key length for SPL transfer');
         }
 
-        // Compute Associated Token Accounts (ATA) for owner and recipient: ATA = findProgramAddress([owner, TokenProgramId, mint], AssociatedTokenProgramId)
-        $ataProgram = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
-        $ataProgramPub = $b58->decode($ataProgram);
-        if (strlen($ataProgramPub) !== 32) {
-            throw new \RuntimeException('Invalid associated token program id');
+        // Resolve Associated Token Accounts via RPC; require they exist (no implicit create)
+        $ownerAta = $this->resolveTokenAccount($from->address, $mint);
+        $toAta = $this->resolveTokenAccount($toAddress, $mint);
+        if ($ownerAta === null) {
+            throw new \RuntimeException('Owner associated token account not found');
         }
-        $ownerAta = $this->findProgramAddress([$ownerPub, $tokenProgramPub, $mintPub], $ataProgramPub);
-        $toAta = $this->findProgramAddress([$toPub, $tokenProgramPub, $mintPub], $ataProgramPub);
+        if ($toAta === null) {
+            throw new \RuntimeException('Recipient associated token account not found; create ATA first');
+        }
 
         // Build instruction for TransferChecked
         // Layout: instruction(12) u8 | amount u64 LE | decimals u8
@@ -246,9 +247,9 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         // Header: 1 signer (owner), 0 readonly signed, 2 readonly unsigned (mint, token program)
         $header = chr(1).chr(0).chr(2);
 
-        // Account keys: [owner, owner_ata, mint, dest_ata, token_program]
+    // Account keys: [owner, owner_ata, mint, dest_ata, token_program]
         // Ensure unique order for program index referencing; we’ll set program index as the last element
-        $accountKeys = [ $ownerPub, $ownerAta, $mintPub, $toAta, $tokenProgramPub ];
+    $accountKeys = [ $ownerPub, $ownerAta, $mintPub, $toAta, $tokenProgramPub ];
         $acctSection = $this->shortvec(count($accountKeys)) . implode('', $accountKeys);
 
         // Program index in account keys
@@ -301,31 +302,21 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         return strrev($be);
     }
 
-    /** Compute Program Derived Address for seeds and program id; returns 32-byte PDA pubkey. */
-    private function findProgramAddress(array $seeds, string $programId): string
+    /** Resolve the first SPL token account (ATA) for owner/mint; returns 32-byte pubkey or null if not found. */
+    private function resolveTokenAccount(string $ownerAddress, string $mintAddress): ?string
     {
-        $bump = 255;
-        while ($bump >= 0) {
-            $data = '';
-            foreach ($seeds as $s) { $data .= $s; }
-            $data .= chr($bump);
-            $data .= $programId;
-            $data .= 'ProgramDerivedAddress';
-            $hash = hash('sha256', $data, true);
-            if (! $this->isOnCurve($hash)) {
-                return $hash;
+        $resp = $this->rpc->getTokenAccountsByOwner($ownerAddress, ['mint' => $mintAddress], true);
+        $value = $resp['value'] ?? [];
+        if (!empty($value)) {
+            $pubkey = $value[0]['pubkey'] ?? null;
+            if (is_string($pubkey) && $pubkey !== '') {
+                $b58 = new Base58(['characters' => Base58::BITCOIN]);
+                $decoded = $b58->decode($pubkey);
+                if (strlen($decoded) === 32) {
+                    return $decoded;
+                }
             }
-            $bump--;
         }
-        throw new \RuntimeException('Failed to find program address');
-    }
-
-    /** Rough check for whether a 32-byte value is on the ed25519 curve (disallow if on curve). */
-    private function isOnCurve(string $pubkey): bool
-    {
-        // We can attempt to decompress; if it succeeds, it's on curve.
-        // sodium does not expose decompress directly; approximate by trying to create a keypair from seed (not accurate).
-        // For our purposes we assume generic hash outputs are off-curve, which holds for PDA derivation scheme.
-        return false;
+        return null;
     }
 }
