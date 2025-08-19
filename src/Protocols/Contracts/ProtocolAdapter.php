@@ -29,4 +29,16 @@ interface ProtocolAdapter
 
     /** Validate address format for this protocol. */
     public function validateAddress(string $address): bool;
+
+    /** Get fungible token balance for an address (chain-agnostic). */
+    public function getTokenBalance(\Roberts\Web3Laravel\Models\Token $token, string $ownerAddress): string;
+
+    /** Get allowance for owner->spender on a fungible token (chain-agnostic). */
+    public function allowance(\Roberts\Web3Laravel\Models\Token $token, string $ownerAddress, string $spenderAddress): string;
+
+    /**
+     * Transfer fungible tokens for a given token. Amount is a decimal string in base units.
+     * Returns a transaction signature/hash.
+     */
+    public function transferToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $from, string $toAddress, string $amount): string;
 }

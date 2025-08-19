@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Services\TokenService;
-use Roberts\Web3Laravel\Support\Address;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 
 class TokenTransferCommand extends Command
 {
@@ -38,7 +38,7 @@ class TokenTransferCommand extends Command
         // Find wallet
         $wallet = is_numeric($fromInput)
             ? Wallet::find($fromInput)
-            : Wallet::where('address', Address::normalize($fromInput))->first();
+            : Wallet::byAddress($fromInput)->first();
 
         if (! $wallet) {
             $this->error("Wallet not found: {$fromInput}");
@@ -46,15 +46,14 @@ class TokenTransferCommand extends Command
             return self::FAILURE;
         }
 
-        // Validate addresses
-        if (! Address::isValidEvm($to)) {
-            $this->error("Invalid recipient address: {$to}");
-
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($wallet->protocol);
+        if (! $adapter->validateAddress($to)) {
+            $this->error("Invalid recipient address for protocol {$wallet->protocol->value}: {$to}");
             return self::FAILURE;
         }
-
-        // Normalize and checksum for display
-        $toChecksum = Address::toChecksum($to);
+        $toNormalized = $adapter->normalizeAddress($to);
 
         // Parse human-readable amount to raw based on token decimals (ERC-20 only)
         $amount = $amountInput;
@@ -66,7 +65,7 @@ class TokenTransferCommand extends Command
             $this->info('Preparing transfer...');
             $this->line("Token: {$token->contract->address} ({$token->getTokenType()})");
             $this->line("From: {$wallet->address}");
-            $this->line("To: {$toChecksum}");
+            $this->line("To: {$toNormalized}");
             $this->line("Amount (raw): {$amount}");
             if ($nftTokenId) {
                 $this->line("Token ID: {$nftTokenId}");
@@ -78,11 +77,19 @@ class TokenTransferCommand extends Command
                 return self::SUCCESS;
             }
 
-            $transaction = $tokenService->transfer($token, $wallet, $to, $amount, $nftTokenId);
-
-            $this->info("Transfer transaction created with ID: {$transaction->id}");
-            $this->line("Status: {$transaction->status->value}");
-            $this->line('The transaction will be processed asynchronously.');
+            // Route by protocol
+            if ($wallet->protocol->isEvm()) {
+                $transaction = $tokenService->transfer($token, $wallet, $toNormalized, $amount, $nftTokenId);
+                $this->info("Transfer transaction created with ID: {$transaction->id}");
+                $this->line("Status: {$transaction->status->value}");
+                $this->line('The transaction will be processed asynchronously.');
+            } elseif ($wallet->protocol->isSolana()) {
+                $signature = $adapter->transferToken($token, $wallet, $toNormalized, $amount);
+                $this->info('SPL token transfer submitted');
+                $this->line("Signature: {$signature}");
+            } else {
+                throw new \RuntimeException('Token transfers for '.$wallet->protocol->value.' are not implemented yet');
+            }
 
             return self::SUCCESS;
         } catch (\Exception $e) {

@@ -2,7 +2,7 @@
 
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
-use Roberts\Web3Laravel\Services\SolanaService;
+use Roberts\Web3Laravel\Services\WalletService;
 use Tuupola\Base58;
 
 it('creates a solana wallet with base58 address and encrypted key', function () {
@@ -22,8 +22,7 @@ it('creates a solana wallet with base58 address and encrypted key', function () 
         'protocol' => BlockchainProtocol::SOLANA,
     ]);
 
-    $service = app(SolanaService::class);
-    $wallet = $service->createWallet($chain->id);
+    $wallet = app(WalletService::class)->createForBlockchain($chain);
 
     expect($wallet->address)->not->toBeEmpty();
 

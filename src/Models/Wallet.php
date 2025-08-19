@@ -81,6 +81,17 @@ class Wallet extends Model
     }
 
     /**
+     * Get native currency balance (wei/lamports) as decimal string via protocol adapter.
+     */
+    public function getNativeBalanceAttribute(): string
+    {
+        /** @var \Roberts\Web3Laravel\Services\BalanceService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
+
+        return $svc->native($this);
+    }
+
+    /**
      * Convenience: get a specific tracked token balance (raw), or null.
      */
     public function tokenBalanceFor(Token $token): ?string
@@ -91,14 +102,23 @@ class Wallet extends Model
         return $row?->balance;
     }
 
+    /** Convenience: fetch live token balance via service. */
+    public function getLiveTokenBalance(Token $token): string
+    {
+        /** @var \Roberts\Web3Laravel\Services\BalanceService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
+
+        return $svc->token($token, $this);
+    }
+
     /**
      * Convenience: check ERC-20 allowance from this wallet (owner) to a spender.
      */
     public function allowance(Token $token, string $spender): string
     {
-        $service = app(\Roberts\Web3Laravel\Services\TokenService::class);
-
-        return $service->allowance($token, $this->address, $spender);
+    /** @var \Roberts\Web3Laravel\Services\BalanceService $svc */
+    $svc = app(\Roberts\Web3Laravel\Services\BalanceService::class);
+    return $svc->allowance($token, $this->address, $spender, $this);
     }
 
     /**

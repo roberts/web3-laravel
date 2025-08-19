@@ -24,6 +24,7 @@ class SendBalanceUpdateWebhook
 
         $payload = [
             'wallet' => $event->wallet->address,
+            'protocol' => $event->wallet->protocol->value,
             'token_id' => $event->token->id,
             'contract' => optional($event->token->contract)->address,
             'old' => $event->oldBalance,
@@ -51,9 +52,15 @@ class SendBalanceUpdateWebhook
             return;
         }
 
+        /** @var \Roberts\Web3Laravel\Protocols\ProtocolRouter $router */
+        $router = app(\Roberts\Web3Laravel\Protocols\ProtocolRouter::class);
+        $adapter = $router->for($event->owner->protocol);
+        $normalizedSpender = $adapter->normalizeAddress($event->spender);
+
         $payload = [
             'owner' => $event->owner->address,
-            'spender' => strtolower($event->spender),
+            'spender' => $normalizedSpender,
+            'protocol' => $event->owner->protocol->value,
             'token_id' => $event->token->id,
             'contract' => optional($event->token->contract)->address,
             'old' => $event->oldAllowance,
