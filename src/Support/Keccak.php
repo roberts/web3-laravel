@@ -12,7 +12,6 @@ class Keccak
         $bin = $hexInput ? hex2bin(self::normalizeHex($input)) : $input;
         // Prefer kornrunner/keccak for Ethereum-compatible Keccak-256
         if (class_exists('kornrunner\\Keccak')) {
-            /** @var class-string $cls */
             $cls = 'kornrunner\\Keccak';
             // raw_output=false to return hex string
             $digest = $cls::hash($bin, 256, false);

@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Roberts\Web3Laravel\Events\TransactionConfirmed;
 use Roberts\Web3Laravel\Models\Transaction;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 
 class ConfirmTransaction implements ShouldQueue
 {
@@ -32,13 +33,11 @@ class ConfirmTransaction implements ShouldQueue
         if (! $wallet) {
             return;
         }
-        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
-        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
-        $eth = $manager->ethFrom($wallet->web3());
-
+        /** @var EvmClientInterface $evm */
+        $evm = app(EvmClientInterface::class);
         // Get receipt
         try {
-            $receipt = $manager->ethCall($eth, 'getTransactionReceipt', [$tx->tx_hash]);
+            $receipt = $evm->getTransactionReceipt($tx->tx_hash);
         } catch (\Throwable) {
             return; // try again later
         }
@@ -51,16 +50,17 @@ class ConfirmTransaction implements ShouldQueue
         }
 
         // Determine confirmations
-        $currentBlock = $manager->ethCall($eth, 'blockNumber');
-        if (empty($receipt->blockNumber) || $currentBlock === null) {
+        $currentBlock = $evm->blockNumber();
+        $receiptBlock = $receipt['blockNumber'] ?? null;
+        if (empty($receiptBlock) || $currentBlock === null) {
             static::dispatch($tx->id)->delay(now()->addSeconds(10));
 
             return;
         }
 
-        $blockNum = is_string($receipt->blockNumber) && str_starts_with($receipt->blockNumber, '0x')
-            ? hexdec(substr($receipt->blockNumber, 2))
-            : (int) $receipt->blockNumber;
+        $blockNum = is_string($receiptBlock) && str_starts_with($receiptBlock, '0x')
+            ? hexdec(substr($receiptBlock, 2))
+            : (int) $receiptBlock;
         $head = is_string($currentBlock) && str_starts_with($currentBlock, '0x')
             ? hexdec(substr($currentBlock, 2))
             : (int) $currentBlock;

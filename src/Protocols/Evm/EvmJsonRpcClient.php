@@ -67,4 +67,47 @@ class EvmJsonRpcClient implements EvmClientInterface
 
         return is_array($res) ? $res : [];
     }
+
+    public function getCode(string $address, string $blockTag = 'latest'): string
+    {
+        return (string) $this->rpc->call('eth_getCode', [strtolower($address), $blockTag]);
+    }
+
+    public function getTransactionByHash(string $txHash): ?array
+    {
+        $res = $this->rpc->call('eth_getTransactionByHash', [$txHash]);
+
+        return is_array($res) ? $res : null;
+    }
+
+    public function getBlockByNumber(string $blockTagOrHex, bool $fullTransactions = false): ?array
+    {
+        $res = $this->rpc->call('eth_getBlockByNumber', [$blockTagOrHex, $fullTransactions]);
+
+        return is_array($res) ? $res : null;
+    }
+
+    public function getBlockByHash(string $blockHash, bool $fullTransactions = false): ?array
+    {
+        $res = $this->rpc->call('eth_getBlockByHash', [$blockHash, $fullTransactions]);
+
+        return is_array($res) ? $res : null;
+    }
+
+    public function getStorageAt(string $address, string $position, string $blockTag = 'latest'): string
+    {
+        return (string) $this->rpc->call('eth_getStorageAt', [strtolower($address), $position, $blockTag]);
+    }
+
+    public function maxPriorityFeePerGas(): string
+    {
+        return (string) $this->rpc->call('eth_maxPriorityFeePerGas');
+    }
+
+    public function feeHistory(int $blockCount, string $newestBlock = 'latest', array $rewardPercentiles = []): array
+    {
+        $res = $this->rpc->call('eth_feeHistory', [$blockCount, $newestBlock, $rewardPercentiles]);
+
+        return is_array($res) ? $res : [];
+    }
 }

@@ -1,11 +1,11 @@
-# Laravel package wrapper for web3.php
+# Web3 Laravel — native EVM JSON-RPC + signer for Laravel
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/roberts/web3-laravel.svg?style=flat-square)](https://packagist.org/packages/roberts/web3-laravel)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/roberts/web3-laravel/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/roberts/web3-laravel/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/roberts/web3-laravel/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/roberts/web3-laravel/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/roberts/web3-laravel.svg?style=flat-square)](https://packagist.org/packages/roberts/web3-laravel)
 
-This Laravel package creates a wrapper for the functionality I want out of the web3.php package. Please review the featurees below:
+This Laravel package provides a protocol-first toolkit to create wallets and interact with EVM chains using a native JSON-RPC client and a built-in transaction signer (legacy + EIP-1559). No web3.php dependency.
 
 ## Installation
 
@@ -35,15 +35,25 @@ This is the contents of the published config file (defaults shown):
 
 ```php
 return [
-	'use_database' => env('WEB3_USE_DATABASE', true),
-	'default_rpc' => env('WEB3_DEFAULT_RPC', 'https://mainnet.base.org'),
-	'default_chain_id' => env('WEB3_DEFAULT_CHAIN_ID', 8453),
-	'request_timeout' => env('WEB3_REQUEST_TIMEOUT', 10),
-	'networks' => [
-		// 1 => 'https://mainnet.infura.io/v3/xxx',
-		8453 => 'https://mainnet.base.org',
-		// 84532 => 'https://sepolia.base.org',
-	],
+    'use_database' => env('WEB3_USE_DATABASE', true),
+    'default_rpc' => env('WEB3_DEFAULT_RPC', 'https://mainnet.base.org'),
+    'default_chain_id' => env('WEB3_DEFAULT_CHAIN_ID', 8453),
+    'request_timeout' => env('WEB3_REQUEST_TIMEOUT', 10),
+    'networks' => [
+        // 1 => 'https://mainnet.infura.io/v3/xxx',
+        8453 => 'https://mainnet.base.org',
+        // 84532 => 'https://sepolia.base.org',
+    ],
+    // Optional client tuning
+    'rpc' => [
+        'retries' => 2,
+        'backoff_ms' => 200,
+        'headers' => [
+            // 'Authorization' => 'Bearer ...',
+        ],
+    ],
+    'confirmations_required' => env('WEB3_CONFIRMATIONS_REQUIRED', 6),
+    'confirmations_poll_interval' => env('WEB3_CONFIRMATIONS_POLL_INTERVAL', 10),
 ];
 ```
 
@@ -56,22 +66,14 @@ php artisan vendor:publish --tag="web3-laravel-views"
 ## Usage
 
 ```php
-use Roberts\Web3Laravel\Facades\Web3Laravel as Web3M;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 
-// Resolve a Web3 client for default chain (config or DB):
-$web3 = Web3M::web3();
+// Resolve the native EVM JSON-RPC client
+/** @var EvmClientInterface $evm */
+$evm = app(EvmClientInterface::class);
 
-// Synchronous client version helper (wraps callback-style API):
-$version = Web3M::clientVersionString();
-
-// Resolve for a specific chain id:
-$web3 = Web3M::web3(8453); // Base mainnet
-
-// Or force a specific RPC URL:
-$web3 = Web3M::web3(null, 'https://mainnet.base.org');
-
-// Get the resolved RPC URL without instantiating:
-$rpc = Web3M::resolveRpcUrl(8453);
+$blockHex = $evm->blockNumber();
+$gasPriceHex = $evm->gasPrice();
 ```
 
 Eloquent-style helpers:
@@ -132,7 +134,7 @@ $wallets = Wallet::forUser($user)->get();
 You can also use the built-in ping command to verify connectivity:
 
 ```bash
-php artisan web3:ping --chainId=8453
+php artisan web3:ping
 ```
 
 ## Transactions: Eloquent model & async pipeline
@@ -193,28 +195,16 @@ Confirmations tracking
 ```php
 // config/web3-laravel.php
 'confirmations_required' => 6,
+'confirmations_poll_interval' => 10,
 ```
 
-WebSocket/event-driven mode
+Confirmations watcher (polling)
 
-- Set the mode and (optionally) a WS endpoint in `config/web3-laravel.php`:
-
-```php
-'confirmations_mode' => 'websocket',
-'default_ws' => 'wss://your-node.example/ws',
-// or per-chain mapping:
-'ws_networks' => [
-	8453 => 'wss://mainnet.base.org',
-],
-```
-
-- Run the watcher (long-running):
+- Run the watcher (long-running) to dispatch periodic confirm checks:
 
 ```bash
-php artisan web3:watch-confirmations --chainId=8453 --interval=5
+php artisan web3:watch-confirmations --interval=5
 ```
-
-- The watcher subscribes to new blocks (when supported) and dispatches confirmation checks for submitted transactions immediately.
 
 Advanced: manual estimation & fees
 

@@ -3,28 +3,20 @@
 namespace Roberts\Web3Laravel\Commands;
 
 use Illuminate\Console\Command;
-use Roberts\Web3Laravel\Web3Laravel;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 
 class Web3LaravelCommand extends Command
 {
     public $signature = 'web3:ping {--chainId=} {--rpc=}';
 
-    public $description = 'Show the resolved RPC and try web3_clientVersion.';
+    public $description = 'Simple ping: prints current block number via configured EVM RPC.';
 
     public function handle(): int
     {
-        /** @var Web3Laravel $manager */
-        $manager = app(Web3Laravel::class);
-        $chainId = $this->option('chainId');
-        $chainId = is_numeric($chainId) ? (int) $chainId : null;
-        $rpc = $this->option('rpc');
-
-        $rpcUrl = $manager->resolveRpcUrl($chainId);
-        $this->info('RPC: '.$rpcUrl);
-
         try {
-            $version = $manager->clientVersionString($chainId, $rpc ?: null);
-            $this->info('Client version: '.$version);
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            $this->info('Block number: '.$evm->blockNumber());
         } catch (\Throwable $e) {
             $this->error('Error: '.$e->getMessage());
         }
