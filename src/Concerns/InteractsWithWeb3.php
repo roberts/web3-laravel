@@ -4,7 +4,6 @@ namespace Roberts\Web3Laravel\Concerns;
 
 use InvalidArgumentException;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
-use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 
 trait InteractsWithWeb3
@@ -14,13 +13,13 @@ trait InteractsWithWeb3
     // Public helpers
     public function getBalance(string $blockTag = 'latest'): string
     {
-    if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
 
             return $evm->getBalance($this->address, $blockTag);
         }
-    throw new InvalidArgumentException('getBalance not supported for protocol');
+        throw new InvalidArgumentException('getBalance not supported for protocol');
     }
 
     // Eloquent-style alias
@@ -31,13 +30,13 @@ trait InteractsWithWeb3
 
     public function getTransactionCount(string $blockTag = 'latest'): string
     {
-    if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
 
             return $evm->getTransactionCount($this->address, $blockTag);
         }
-    throw new InvalidArgumentException('getTransactionCount not supported for protocol');
+        throw new InvalidArgumentException('getTransactionCount not supported for protocol');
     }
 
     // Eloquent-style alias
@@ -48,13 +47,13 @@ trait InteractsWithWeb3
 
     public function getGasPrice(): string
     {
-    if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
 
             return $evm->gasPrice();
         }
-    throw new InvalidArgumentException('gasPrice not supported for protocol');
+        throw new InvalidArgumentException('gasPrice not supported for protocol');
     }
 
     // Eloquent-style alias
@@ -71,14 +70,14 @@ trait InteractsWithWeb3
      */
     public function estimateGas(array $tx, string $blockTag = 'latest'): string
     {
-    if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
             $payload = array_merge(['from' => strtolower($this->address)], $tx);
 
             return $evm->estimateGas($payload, $blockTag);
         }
-    throw new InvalidArgumentException('estimateGas not supported for protocol');
+        throw new InvalidArgumentException('estimateGas not supported for protocol');
     }
 
     // Eloquent-style send using TransactionService

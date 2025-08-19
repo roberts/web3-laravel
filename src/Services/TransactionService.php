@@ -1,12 +1,13 @@
 <?php
 
 namespace Roberts\Web3Laravel\Services;
+
+use InvalidArgumentException;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Support\Hex;
 use Roberts\Web3Laravel\Support\Rlp;
 use Roberts\Web3Laravel\Support\Signer;
-use InvalidArgumentException;
 
 class TransactionService
 {
@@ -15,7 +16,7 @@ class TransactionService
     /** Estimate gas for a transaction using the wallet's network. */
     public function estimateGas(Wallet $from, array $tx, string $blockTag = 'latest'): string
     {
-    if ($from->protocol->isEvm()) {
+        if ($from->protocol->isEvm()) {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
             $payload = array_merge(['from' => strtolower($from->address)], $tx);
@@ -23,7 +24,7 @@ class TransactionService
             return $evm->estimateGas($payload, $blockTag);
         }
 
-    throw new InvalidArgumentException('estimateGas not supported for non-EVM protocols.');
+        throw new InvalidArgumentException('estimateGas not supported for non-EVM protocols.');
     }
 
     /** Suggest EIP-1559 fee parameters (maxPriorityFeePerGas, maxFeePerGas) as hex strings. */
@@ -42,9 +43,10 @@ class TransactionService
             } catch (\Throwable) {
                 $gp = $priority;
             }
+
             return ['priority' => is_string($priority) ? $priority : Hex::toHex((int) $priority, true), 'max' => is_string($gp) ? $gp : Hex::toHex((int) $gp, true)];
         }
-    throw new InvalidArgumentException('suggestFees not supported for protocol');
+        throw new InvalidArgumentException('suggestFees not supported for protocol');
     }
 
     /**
@@ -58,7 +60,7 @@ class TransactionService
     public function sendRaw(Wallet $from, array $tx): string
     {
         // Resolve chain & client
-    if ($from->protocol->isEvm()) {
+        if ($from->protocol->isEvm()) {
             /** @var EvmClientInterface $evm */
             $evm = app(EvmClientInterface::class);
             $nonce = $tx['nonce'] ?? $evm->getTransactionCount($from->address, 'pending');
@@ -120,6 +122,7 @@ class TransactionService
                 throw new \RuntimeException('Wallet has no private key available for signing.');
             }
             $signed = Signer::signLegacy($txData, $privKeyHex);
+
             return $evm->sendRawTransaction($signed['raw']);
         }
         // Non-EVM protocols are not supported here

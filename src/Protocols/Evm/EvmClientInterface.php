@@ -43,6 +43,7 @@ interface EvmClientInterface
 
     /**
      * eth_feeHistory: returns {oldestBlock, reward, baseFeePerGas, gasUsedRatio}
+     *
      * @return array<string,mixed>
      */
     public function feeHistory(int $blockCount, string $newestBlock = 'latest', array $rewardPercentiles = []): array;

@@ -125,7 +125,7 @@ class PrepareTransaction implements ShouldQueue
     /** Compute required wei as hex string (0x...), or null if inputs insufficient. */
     protected function estimateRequiredWeiHex(Transaction $tx): ?string
     {
-    $valueHex = $tx->value === null ? '0x0' : (is_string($tx->value) ? $tx->value : Hex::toHex($tx->value, true));
+        $valueHex = $tx->value === null ? '0x0' : (is_string($tx->value) ? $tx->value : Hex::toHex($tx->value, true));
         $gas = (int) ($tx->gas_limit ?? 0);
         if ($gas <= 0) {
             return $valueHex;

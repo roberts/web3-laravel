@@ -21,8 +21,10 @@ class Units
             if (function_exists('gmp_init')) {
                 $i = gmp_init((string) $amount, 10);
                 $mul = gmp_mul($i, gmp_pow(10, $exp));
+
                 return '0x'.gmp_strval($mul, 16);
             }
+
             // best-effort for small ints
             return Hex::toHex((int) ($amount * (10 ** $exp)), true);
         }
@@ -33,6 +35,7 @@ class Units
             $intOnly = preg_replace('/\D/', '', $int) ?? '0';
             $multiplier = (int) (10 ** $exp);
             $val = (int) $intOnly;
+
             return Hex::toHex($val * $multiplier, true);
         }
         $parts = explode('.', $amount, 2);
@@ -41,6 +44,7 @@ class Units
         $fracPart = substr($fracPart.'000000000000000000', 0, $exp);
         $i = gmp_mul($intPart, gmp_pow(10, $exp));
         $f = gmp_init($fracPart, 10);
+
         return '0x'.gmp_strval(gmp_add($i, $f), 16);
     }
 
@@ -48,9 +52,12 @@ class Units
     {
         $exp = self::MAP[strtolower($unit)] ?? 18;
         $hex = Hex::stripZero($hexWei);
-        if ($hex === '') return '0';
+        if ($hex === '') {
+            return '0';
+        }
         if (! function_exists('gmp_init')) {
             $val = hexdec($hex);
+
             return (string) ($val / (10 ** $exp));
         }
         $v = gmp_init($hex, 16);
@@ -59,6 +66,7 @@ class Units
         $rem = gmp_div_r($v, $base);
         $frac = str_pad(gmp_strval($rem, 10), $exp, '0', STR_PAD_LEFT);
         $frac = rtrim($frac, '0');
+
         return $frac === '' ? gmp_strval($int, 10) : (gmp_strval($int, 10).'.'.$frac);
     }
 }

@@ -49,14 +49,14 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
     public function registeringPackage(): void
     {
-    // Removed Web3Laravel (web3.php) manager; native stack only.
+        // Removed Web3Laravel (web3.php) manager; native stack only.
 
         $this->app->singleton(ContractCaller::class, function ($app) {
             return new ContractCaller($app->make(EvmClientInterface::class));
         });
 
         $this->app->singleton(TransactionService::class, function ($app) {
-            return new TransactionService();
+            return new TransactionService;
         });
 
         $this->app->singleton(TokenService::class, function ($app) {

@@ -1,1 +1,3 @@
-<?php // removed legacy adapter
+<?php
+
+// removed legacy adapter
