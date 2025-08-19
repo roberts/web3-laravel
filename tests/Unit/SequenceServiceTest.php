@@ -11,6 +11,10 @@ it('returns EVM nonce (hex) via SequenceService', function () {
     app()->bind(EvmClientInterface::class, function () {
         return new class implements EvmClientInterface
         {
+            public function chainId(): int
+            {
+                return 1;
+            }
             public function getBalance(string $address, string $blockTag = 'latest'): string
             {
                 return '0x0';
@@ -41,6 +45,11 @@ it('returns EVM nonce (hex) via SequenceService', function () {
                 return '0xhash';
             }
 
+            public function call(array $tx, string $blockTag = 'latest'): string
+            {
+                return '0x';
+            }
+
             public function blockNumber(): string
             {
                 return '0x1';
@@ -49,6 +58,46 @@ it('returns EVM nonce (hex) via SequenceService', function () {
             public function getTransactionReceipt(string $hash): ?array
             {
                 return null;
+            }
+
+            public function getLogs(array $filter): array
+            {
+                return [];
+            }
+
+            public function getCode(string $address, string $blockTag = 'latest'): string
+            {
+                return '0x';
+            }
+
+            public function getTransactionByHash(string $txHash): ?array
+            {
+                return null;
+            }
+
+            public function getBlockByNumber(string $blockTagOrHex, bool $fullTransactions = false): ?array
+            {
+                return null;
+            }
+
+            public function getBlockByHash(string $blockHash, bool $fullTransactions = false): ?array
+            {
+                return null;
+            }
+
+            public function getStorageAt(string $address, string $position, string $blockTag = 'latest'): string
+            {
+                return '0x0';
+            }
+
+            public function feeHistory(int $blockCount, string $newestBlock = 'latest', array $rewardPercentiles = []): array
+            {
+                return [
+                    'oldestBlock' => '0x0',
+                    'reward' => [],
+                    'baseFeePerGas' => [],
+                    'gasUsedRatio' => [],
+                ];
             }
         };
     });
@@ -62,8 +111,10 @@ it('returns EVM nonce (hex) via SequenceService', function () {
 it('returns XRPL Sequence (int) via SequenceService', function () {
     // Bind a fake XRPL client
     app()->bind(XrplJsonRpcClient::class, function () {
-        return new class
+        return new class extends XrplJsonRpcClient
         {
+            public function __construct() {}
+
             public function accountInfo(string $address): array
             {
                 return ['account_data' => ['Sequence' => 10]];

@@ -69,7 +69,8 @@ class EvmProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\Has
         ];
         try {
             $gp = $this->evm->gasPrice();
-            $payload['gasPrice'] = is_string($gp) ? $gp : Hex::toHex((int) $gp, true);
+            // gasPrice() contract returns a hex string; assign directly
+            $payload['gasPrice'] = $gp;
         } catch (\Throwable) {
             // fallback: let TransactionService pick defaults
         }
