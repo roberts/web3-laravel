@@ -92,4 +92,16 @@ class EvmProtocolAdapter implements ProtocolAdapter
         // For EVM, token transfers are handled via TransactionService/TokenService to build ABI calls.
         throw new \RuntimeException('transferToken not implemented via adapter for EVM');
     }
+
+    public function approveToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress, string $amount): string
+    {
+        // For EVM, approvals are handled via TransactionService/TokenService to build ABI calls.
+        throw new \RuntimeException('approveToken not implemented via adapter for EVM');
+    }
+
+    public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress): string
+    {
+        // For EVM, approvals are handled via TransactionService/TokenService to build ABI calls (approve 0).
+        throw new \RuntimeException('revokeToken not implemented via adapter for EVM');
+    }
 }

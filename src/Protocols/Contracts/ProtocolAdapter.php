@@ -41,4 +41,10 @@ interface ProtocolAdapter
      * Returns a transaction signature/hash.
      */
     public function transferToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $from, string $toAddress, string $amount): string;
+
+    /** Approve a spender for a fungible token. Amount is a decimal string in base units. */
+    public function approveToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress, string $amount): string;
+
+    /** Revoke a spender approval for a fungible token (set to zero). */
+    public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress): string;
 }

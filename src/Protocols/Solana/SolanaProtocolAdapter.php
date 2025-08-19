@@ -281,6 +281,81 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         return $this->rpc->sendTransaction($base64);
     }
 
+    public function approveToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress, string $amount): string
+    {
+        if (! extension_loaded('sodium')) {
+            throw new \RuntimeException('ext-sodium is required for Solana signing');
+        }
+
+        $mint = $token->contract->address;
+        if (! is_string($mint) || $mint === '') {
+            throw new \InvalidArgumentException('Token mint (contract address) is required for SPL approvals');
+        }
+
+        $b58 = new Base58(['characters' => Base58::BITCOIN]);
+        $ownerPub = $b58->decode($owner->address);
+        $spenderPub = $b58->decode($spenderAddress);
+        $mintPub = $b58->decode($mint);
+        $tokenProgramPub = $b58->decode(SplToken::TOKEN_PROGRAM_ID);
+        if (strlen($ownerPub) !== 32 || strlen($spenderPub) !== 32 || strlen($mintPub) !== 32 || strlen($tokenProgramPub) !== 32) {
+            throw new \InvalidArgumentException('Invalid public key length for SPL approve');
+        }
+
+        // Resolve/create owner ATA depending on config
+        $ownerAta = $this->resolveTokenAccount($owner->address, $mint);
+        if ($ownerAta === null) {
+            $autoCreate = (bool) config('web3-laravel.solana.auto_create_atas', false);
+            if (! $autoCreate) {
+                throw new \RuntimeException('Owner associated token account not found');
+            }
+            $ownerAta = $this->createAssociatedTokenAccount($owner->address, $mint, $owner);
+        }
+
+        // Build ApproveChecked instruction (u8 13 | amount u64 LE | decimals u8)
+        $amountLe = $this->encodeU64Le($amount);
+        $decimals = (int) ($token->decimals ?? 0);
+        $ixData = chr(13).$amountLe.chr($decimals);
+
+    // Account keys order matters: [signer(owner), writable unsigned (owner ATA), readonly unsigned (mint, delegate), program]
+    $accountKeys = [$ownerPub, $ownerAta, $mintPub, $spenderPub, $tokenProgramPub];
+    // Instruction account indices into accountKeys: source(1), mint(2), delegate(3), owner(0)
+    return $this->submitSingleProgramInstruction($owner, $accountKeys, $ixData, count($accountKeys) - 1, [1, 2, 3, 0]);
+    }
+
+    public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress): string
+    {
+        if (! extension_loaded('sodium')) {
+            throw new \RuntimeException('ext-sodium is required for Solana signing');
+        }
+
+        $mint = $token->contract->address;
+        if (! is_string($mint) || $mint === '') {
+            throw new \InvalidArgumentException('Token mint (contract address) is required for SPL revoke');
+        }
+
+        $b58 = new Base58(['characters' => Base58::BITCOIN]);
+        $ownerPub = $b58->decode($owner->address);
+        $mintPub = $b58->decode($mint);
+        $tokenProgramPub = $b58->decode(SplToken::TOKEN_PROGRAM_ID);
+        if (strlen($ownerPub) !== 32 || strlen($mintPub) !== 32 || strlen($tokenProgramPub) !== 32) {
+            throw new \InvalidArgumentException('Invalid public key length for SPL revoke');
+        }
+
+        $ownerAta = $this->resolveTokenAccount($owner->address, $mint);
+        if ($ownerAta === null) {
+            throw new \RuntimeException('Owner associated token account not found');
+        }
+
+        // Revoke instruction (u8 5)
+        $ixData = chr(5);
+
+    // Account keys: [signer(owner), writable unsigned (owner ATA), program]
+    $accountKeys = [$ownerPub, $ownerAta, $tokenProgramPub];
+
+    // For revoke, instruction accounts are: source (1), owner (0)
+    return $this->submitSingleProgramInstruction($owner, $accountKeys, $ixData, count($accountKeys) - 1, [1, 0]);
+    }
+
     /** Shortvec (compact-u16) length encoding used by Solana. */
     private function shortvec(int $n): string
     {
@@ -326,5 +401,117 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         }
 
         return null;
+    }
+
+    /** Create the associated token account for owner+mint using the Associated Token Program. Returns 32-byte pubkey. */
+    private function createAssociatedTokenAccount(string $ownerAddress, string $mintAddress, Wallet $feePayer): string
+    {
+        // Minimal ATA creation: invoke spl-associated-token-account program instruction Create
+        // Program IDs
+        $ATA_PROGRAM_ID = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+        $SYS_PROGRAM_ID = SystemProgram::PROGRAM_ID;
+        $RENT_SYSVAR = 'SysvarRent111111111111111111111111111111111';
+
+        $b58 = new Base58(['characters' => Base58::BITCOIN]);
+        $ownerPub = $b58->decode($ownerAddress);
+        $mintPub = $b58->decode($mintAddress);
+        $tokenProgramPub = $b58->decode(SplToken::TOKEN_PROGRAM_ID);
+        $ataProgramPub = $b58->decode($ATA_PROGRAM_ID);
+        $sysProgramPub = $b58->decode($SYS_PROGRAM_ID);
+        $rentSysvarPub = $b58->decode($RENT_SYSVAR);
+
+        // Preflight: if already exists, return it
+        $existing = $this->resolveTokenAccount($ownerAddress, $mintAddress);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        // Instruction layout for ATA create: no data payload (empty); program derives ATA PDA.
+        $ixData = '';
+
+        // Accounts (ordered) per SPL-Associated Token Account: payer (signer), ATA, owner, mint, system_program, token_program, rent_sysvar
+        $ataPub = $this->deriveAssociatedTokenAddress($ownerPub, $mintPub, $tokenProgramPub, $ataProgramPub);
+        $accounts = [
+            $b58->decode($feePayer->address),
+            $ataPub,
+            $ownerPub,
+            $mintPub,
+            $sysProgramPub,
+            $tokenProgramPub,
+            $rentSysvarPub,
+            $ataProgramPub, // place program id last for index
+        ];
+
+        // Submit generic single-instruction tx
+        $sig = $this->submitSingleProgramInstruction($feePayer, $accounts, $ixData, count($accounts) - 1);
+
+        // Optionally wait for confirmation and then return the derived ATA
+        return $ataPub;
+    }
+
+    /** Derive ATA PDA: findProgramAddress([owner, token_program, mint], ata_program). */
+    private function deriveAssociatedTokenAddress(string $ownerPub, string $mintPub, string $tokenProgramPub, string $ataProgramPub): string
+    {
+        // This is a PDA derivation; in absence of full ed25519 PDA routine here, defer to RPC existence or reuse resolve after creation.
+        // For message accounts we still need the 32-byte key; we can return a placeholder (will be on-chain after create). In practice,
+        // deriving the PDA client-side requires SHA256( seeds + program_id + "ProgramDerivedAddress" ) off-curve check. Keeping simple here:
+        // call resolve after creation to get the real address.
+        // As fallback, try resolve before create which already returned null.
+        // Return a zeroed 32-byte bytestring to fill account metas; Solana runtime uses accounts by key, so this should be the exact key.
+        // Instead, omit this risky path: require confirmation path to re-fetch.
+        // For safety, throw to indicate PDA derivation not available.
+        throw new \RuntimeException('ATA PDA derivation not implemented client-side');
+    }
+
+    /**
+     * Helper to submit a single-instruction transaction with provided accounts; returns signature.
+     * $accountKeys should be ordered as desired; $programIndex must be the index of the program id in $accountKeys.
+     * The instruction accounts implied by ixData must be encoded by the caller's chosen order; this helper will
+     * include all non-program accounts as instruction account metas in index order.
+     */
+    private function submitSingleProgramInstruction(Wallet $signerWallet, array $accountKeys, string $ixData, int $programIndex, ?array $instructionAccountIndices = null): string
+    {
+        $b58 = new Base58(['characters' => Base58::BITCOIN]);
+        $latest = $this->rpc->getLatestBlockhash();
+        $blockhashB58 = $latest['value']['blockhash'] ?? null;
+        if (! is_string($blockhashB58)) {
+            throw new \RuntimeException('Failed to fetch latest blockhash');
+        }
+        $recentBlockhash = $b58->decode($blockhashB58);
+        if (strlen($recentBlockhash) !== 32) {
+            throw new \RuntimeException('Invalid blockhash length');
+        }
+
+        $secretHex = Crypt::decryptString($signerWallet->key);
+        $secretKey = hex2bin($secretHex);
+        if ($secretKey === false) {
+            throw new \RuntimeException('Invalid Solana secret key encoding');
+        }
+
+    // Header: 1 signer, 0 ro signed. Readonly unsigned = total accounts - writable unsigned - readonly signed - signers
+    // We keep it simple by assuming only first key is signer and writable, program id is readonly unsigned.
+    $readonlyUnsigned = max(0, count($accountKeys) - 2); // signer + one writable unsigned (e.g., source) + rest readonly
+    $header = chr(1).chr(0).chr($readonlyUnsigned);
+        $acctSection = $this->shortvec(count($accountKeys)).implode('', $accountKeys);
+
+        // Instruction uses provided account indices if given; otherwise all non-program accounts in order
+        $acctIdxs = $instructionAccountIndices !== null
+            ? $instructionAccountIndices
+            : array_values(array_diff(range(0, count($accountKeys) - 1), [$programIndex]));
+        $ci = chr($programIndex)
+            .$this->shortvec(count($acctIdxs))
+            .implode('', array_map(fn ($i) => chr($i), $acctIdxs))
+            .$this->shortvec(strlen($ixData))
+            .$ixData;
+        $ixSection = $this->shortvec(1).$ci;
+
+        $message = $header.$acctSection.$recentBlockhash.$ixSection;
+        $signature = $this->signer->sign($message, $secretKey);
+        if (strlen($signature) !== 64) {
+            throw new \RuntimeException('Invalid signature length');
+        }
+        $tx = $this->shortvec(1).$signature.$message;
+
+        return $this->rpc->sendTransaction(base64_encode($tx));
     }
 }

@@ -48,6 +48,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 \Roberts\Web3Laravel\Commands\TokenInfoCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenMintCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenTransferCommand::class,
+                \Roberts\Web3Laravel\Commands\TokenApproveCommand::class,
                 \Roberts\Web3Laravel\Commands\NativeTransferCommand::class,
                 \Roberts\Web3Laravel\Console\Commands\WatchConfirmationsCommand::class,
                 \Roberts\Web3Laravel\Commands\WalletTokenSnapshotCommand::class,
