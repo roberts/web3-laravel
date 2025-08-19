@@ -37,7 +37,7 @@ class Token extends Model
         'contract_id' => 'integer',
         'decimals' => 'integer',
         'total_supply' => 'string',
-    // explicit nullable metadata fields
+        // explicit nullable metadata fields
         'price_usd' => 'decimal:8',
         'market_cap_usd' => 'decimal:2',
         'volume_24h_usd' => 'decimal:2',
