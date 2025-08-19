@@ -8,9 +8,11 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
+use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
-class BitcoinProtocolAdapter implements ProtocolAdapter
+class BitcoinProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 {
     public function __construct(private KeyEngineInterface $keys) {}
 
@@ -105,5 +107,29 @@ class BitcoinProtocolAdapter implements ProtocolAdapter
     public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, Wallet $owner, string $spenderAddress): string
     {
         throw new \RuntimeException('Not implemented');
+    }
+
+    // -----------------------------
+    // ProtocolTransactionAdapter (Bitcoin)
+    // -----------------------------
+    public function prepareTransaction(Transaction $tx, Wallet $wallet): void
+    {
+        // No-op: UTXO selection/signing TBD; store target amount/address in meta
+        $meta = (array) ($tx->meta ?? []);
+        $meta['bitcoin'] = [
+            'to' => $tx->to,
+            'amount' => $tx->value,
+        ];
+        $tx->meta = $meta;
+    }
+
+    public function submitTransaction(Transaction $tx, Wallet $wallet): string
+    {
+        throw new \RuntimeException('Bitcoin transaction submission not implemented yet');
+    }
+
+    public function checkConfirmations(Transaction $tx, Wallet $wallet): array
+    {
+        return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
     }
 }

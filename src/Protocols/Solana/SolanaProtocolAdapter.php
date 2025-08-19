@@ -8,9 +8,11 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
+use Roberts\Web3Laravel\Models\Transaction;
 use Tuupola\Base58;
 
-class SolanaProtocolAdapter implements ProtocolAdapter
+class SolanaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 {
     public function __construct(private SolanaJsonRpcClient $rpc, private SolanaSigner $signer) {}
 
@@ -357,6 +359,136 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         return $this->submitSingleProgramInstruction($owner, $accountKeys, $ixData, count($accountKeys) - 1, [1, 0]);
     }
 
+    // -----------------------------
+    // ProtocolTransactionAdapter (Solana)
+    // -----------------------------
+    public function prepareTransaction(Transaction $tx, Wallet $wallet): void
+    {
+        // Fetch latest blockhash and store in meta for use during submit.
+        try {
+            $latest = $this->rpc->getLatestBlockhash();
+            $value = $latest['value'] ?? [];
+            $meta = (array) ($tx->meta ?? []);
+            if (isset($value['blockhash'])) {
+                $meta['solana']['recentBlockhash'] = (string) $value['blockhash'];
+            }
+            if (isset($value['lastValidBlockHeight'])) {
+                $meta['solana']['lastValidBlockHeight'] = (int) $value['lastValidBlockHeight'];
+            }
+            $tx->meta = $meta;
+        } catch (\Throwable) {
+            // Best effort; will refetch during submission.
+        }
+    }
+
+    public function submitTransaction(Transaction $tx, Wallet $wallet): string
+    {
+        // Only native SOL transfers supported here via pipeline.
+        $to = (string) $tx->to;
+        if ($to === '') {
+            throw new \InvalidArgumentException('Solana transaction requires a destination address');
+        }
+        $amount = $tx->value;
+        if ($amount === null || $amount === '') {
+            throw new \InvalidArgumentException('Solana transaction requires a value (lamports)');
+        }
+        $lamports = $this->normalizeLamports((string) $amount);
+
+        // Try to reuse prepared recentBlockhash from meta; else fetch.
+        $b58 = new Base58(['characters' => Base58::BITCOIN]);
+        $blockhashB58 = (string) ($tx->meta['solana']['recentBlockhash'] ?? '');
+        if ($blockhashB58 === '') {
+            $latest = $this->rpc->getLatestBlockhash();
+            $blockhashB58 = (string) ($latest['value']['blockhash'] ?? '');
+        }
+        if ($blockhashB58 === '') {
+            throw new \RuntimeException('Failed to fetch latest blockhash');
+        }
+
+        if (! extension_loaded('sodium')) {
+            throw new \RuntimeException('ext-sodium is required for Solana signing');
+        }
+
+        // Keys
+        $secretHex = \Illuminate\Support\Facades\Crypt::decryptString($wallet->key);
+        $secretKey = hex2bin($secretHex);
+        if ($secretKey === false) {
+            throw new \RuntimeException('Invalid Solana secret key encoding');
+        }
+        $fromPub = $b58->decode($wallet->address);
+        $toPub = $b58->decode($to);
+        $programPub = $b58->decode(SystemProgram::PROGRAM_ID);
+        if (strlen($fromPub) !== 32 || strlen($toPub) !== 32 || strlen($programPub) !== 32) {
+            throw new \InvalidArgumentException('Invalid public key(s) length');
+        }
+
+        // Blockhash
+        $recentBlockhash = $b58->decode($blockhashB58);
+        if (strlen($recentBlockhash) !== 32) {
+            throw new \RuntimeException('Invalid blockhash length');
+        }
+
+        // Build legacy transfer message
+        $lamportsLe = $this->encodeU64Le($lamports);
+        $instructionData = \pack('V', 2).$lamportsLe; // SystemProgram::Transfer = 2
+
+        $accounts = [$fromPub, $toPub, $programPub];
+        $programIndex = 2;
+        $header = \chr(1).\chr(0).\chr(1);
+        $acctSection = $this->shortvec(count($accounts)).implode('', $accounts);
+        $acctIdxs = [0, 1];
+        $ci = \chr($programIndex)
+            .$this->shortvec(count($acctIdxs))
+            .implode('', array_map(fn ($i) => \chr($i), $acctIdxs))
+            .$this->shortvec(strlen($instructionData))
+            .$instructionData;
+        $ixSection = $this->shortvec(1).$ci;
+        $message = $header.$acctSection.$recentBlockhash.$ixSection;
+
+        $signature = $this->signer->sign($message, $secretKey);
+        if (strlen($signature) !== 64) {
+            throw new \RuntimeException('Invalid signature length');
+        }
+        $txBytes = $this->shortvec(1).$signature.$message;
+        $base64 = base64_encode($txBytes);
+
+        return $this->rpc->sendTransaction($base64);
+    }
+
+    public function checkConfirmations(Transaction $tx, Wallet $wallet): array
+    {
+        $sig = (string) $tx->tx_hash;
+        if ($sig === '') {
+            return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
+        }
+        try {
+            $statuses = $this->rpc->getSignatureStatuses([$sig]);
+            $val = $statuses['value'][0] ?? null;
+            if (!is_array($val)) {
+                return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
+            }
+            $conf = (int) ($val['confirmations'] ?? 0);
+            $status = (string) ($val['confirmationStatus'] ?? '');
+            $slot = isset($val['slot']) ? (int) $val['slot'] : null;
+            $required = (int) config('web3-laravel.confirmations_required', 6);
+            $isFinal = $status === 'finalized';
+
+            $confirmed = $isFinal || ($conf >= $required && $conf > 0);
+
+            $receipt = null;
+            try { $receipt = $this->rpc->getTransaction($sig); } catch (\Throwable) {}
+
+            return [
+                'confirmed' => $confirmed,
+                'confirmations' => $conf,
+                'receipt' => $receipt,
+                'blockNumber' => $slot,
+            ];
+        } catch (\Throwable) {
+            return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
+        }
+    }
+
     /** Shortvec (compact-u16) length encoding used by Solana. */
     private function shortvec(int $n): string
     {
@@ -514,5 +646,21 @@ class SolanaProtocolAdapter implements ProtocolAdapter
         $tx = $this->shortvec(1).$signature.$message;
 
         return $this->rpc->sendTransaction(base64_encode($tx));
+    }
+
+    /** Normalize lamports value to decimal string; accepts decimal or 0x-hex string. */
+    private function normalizeLamports(string $val): string
+    {
+        $val = trim($val);
+        if ($val === '') {
+            return '0';
+        }
+        if (str_starts_with($val, '0x') || str_starts_with($val, '0X')) {
+            $hex = substr($val, 2);
+            if ($hex === '') { return '0'; }
+            $g = gmp_init($hex, 16);
+            return gmp_strval($g, 10);
+        }
+        return $val;
     }
 }

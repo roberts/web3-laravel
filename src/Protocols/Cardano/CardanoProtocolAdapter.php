@@ -7,8 +7,10 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
+use Roberts\Web3Laravel\Models\Transaction;
 
-class CardanoProtocolAdapter implements ProtocolAdapter
+class CardanoProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 {
     public function protocol(): BlockchainProtocol
     {
@@ -84,5 +86,23 @@ class CardanoProtocolAdapter implements ProtocolAdapter
     public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, Wallet $owner, string $spenderAddress): string
     {
         throw new \RuntimeException('Not implemented');
+    }
+
+    // -----------------------------
+    // ProtocolTransactionAdapter (Cardano)
+    // -----------------------------
+    public function prepareTransaction(Transaction $tx, Wallet $wallet): void
+    {
+        // No-op: UTXO selection to be handled later.
+    }
+
+    public function submitTransaction(Transaction $tx, Wallet $wallet): string
+    {
+        throw new \RuntimeException('Cardano transaction submission not implemented yet');
+    }
+
+    public function checkConfirmations(Transaction $tx, Wallet $wallet): array
+    {
+        return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
     }
 }

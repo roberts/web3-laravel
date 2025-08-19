@@ -7,8 +7,10 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
+use Roberts\Web3Laravel\Models\Transaction;
 
-class TonProtocolAdapter implements ProtocolAdapter
+class TonProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 {
     public function protocol(): BlockchainProtocol
     {
@@ -92,5 +94,23 @@ class TonProtocolAdapter implements ProtocolAdapter
     public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, Wallet $owner, string $spenderAddress): string
     {
         throw new \RuntimeException('Not implemented');
+    }
+
+    // -----------------------------
+    // ProtocolTransactionAdapter (TON)
+    // -----------------------------
+    public function prepareTransaction(Transaction $tx, Wallet $wallet): void
+    {
+        // No-op for now.
+    }
+
+    public function submitTransaction(Transaction $tx, Wallet $wallet): string
+    {
+        throw new \RuntimeException('TON transaction submission not implemented yet');
+    }
+
+    public function checkConfirmations(Transaction $tx, Wallet $wallet): array
+    {
+        return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
     }
 }
