@@ -8,11 +8,14 @@ use Roberts\Web3Laravel\Core\Provider\Pool as ProviderPool;
 use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
 use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
 use Roberts\Web3Laravel\Services\SolanaService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -80,6 +83,11 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             return new SolanaService;
         });
 
+        // Solana protocol adapter
+        $this->app->singleton(SolanaProtocolAdapter::class, function ($app) {
+            return new SolanaProtocolAdapter($app->make(SolanaJsonRpcClient::class));
+        });
+
         // Bind native EVM client (web3.php fully removed)
         $this->app->bind(EvmClientInterface::class, function ($app) {
             $timeout = (int) config('web3-laravel.request_timeout', 10);
@@ -102,6 +110,21 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             $rpc = new PooledHttpClient($pool, $timeout, $retries, $backoff, $headers);
 
             return new EvmJsonRpcClient($rpc);
+        });
+
+        // Bind Solana JSON-RPC client using the same pooled HTTP client
+        $this->app->singleton(SolanaJsonRpcClient::class, function ($app) {
+            $timeout = (int) config('web3-laravel.request_timeout', 10);
+            $retries = (int) data_get(config('web3-laravel.rpc'), 'retries', 2);
+            $backoff = (int) data_get(config('web3-laravel.rpc'), 'backoff_ms', 200);
+            $headers = (array) data_get(config('web3-laravel.rpc'), 'headers', []);
+            $default = (string) data_get(config('web3-laravel.solana'), 'default_rpc', 'https://api.mainnet-beta.solana.com');
+
+            $endpoints = [new Endpoint($default, 1, $headers)];
+            $pool = new ProviderPool($endpoints);
+            $rpc = new PooledHttpClient($pool, $timeout, $retries, $backoff, $headers);
+
+            return new SolanaJsonRpcClient($rpc);
         });
 
         // Register event service provider for package
