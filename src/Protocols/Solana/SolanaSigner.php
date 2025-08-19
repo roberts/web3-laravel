@@ -10,9 +10,10 @@ class SolanaSigner
      */
     public function sign(string $message, string $secretKey): string
     {
-        if (!extension_loaded('sodium')) {
+        if (! extension_loaded('sodium')) {
             throw new \RuntimeException('ext-sodium is required for Solana signing');
         }
+
         return sodium_crypto_sign_detached($message, $secretKey);
     }
 }

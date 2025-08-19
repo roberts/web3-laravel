@@ -14,10 +14,10 @@ class SystemProgram
         return [
             'programId' => self::PROGRAM_ID,
             'keys' => [
-                [ 'pubkey' => $fromPubkey, 'isSigner' => true, 'isWritable' => true ],
-                [ 'pubkey' => $toPubkey, 'isSigner' => false, 'isWritable' => true ],
+                ['pubkey' => $fromPubkey, 'isSigner' => true, 'isWritable' => true],
+                ['pubkey' => $toPubkey, 'isSigner' => false, 'isWritable' => true],
             ],
-            'data' => [ 'type' => 'transfer', 'lamports' => $lamports ],
+            'data' => ['type' => 'transfer', 'lamports' => $lamports],
         ];
     }
 }

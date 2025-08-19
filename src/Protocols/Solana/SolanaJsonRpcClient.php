@@ -11,28 +11,29 @@ class SolanaJsonRpcClient
     public function getLatestBlockhash(): array
     {
         return $this->rpc->call('getLatestBlockhash', [
-            [ 'commitment' => 'confirmed' ]
+            ['commitment' => 'confirmed'],
         ]);
     }
 
     public function getBalance(string $address): int
     {
-        $res = $this->rpc->call('getBalance', [ $address, [ 'commitment' => 'confirmed' ] ]);
-        return (int)($res['value'] ?? 0);
+        $res = $this->rpc->call('getBalance', [$address, ['commitment' => 'confirmed']]);
+
+        return (int) ($res['value'] ?? 0);
     }
 
     public function getSignatureStatuses(array $signatures): array
     {
-        return $this->rpc->call('getSignatureStatuses', [ $signatures, [ 'searchTransactionHistory' => true ] ]);
+        return $this->rpc->call('getSignatureStatuses', [$signatures, ['searchTransactionHistory' => true]]);
     }
 
     public function sendTransaction(string $base64Signed): string
     {
-        return (string) $this->rpc->call('sendTransaction', [ $base64Signed, [ 'encoding' => 'base64', 'skipPreflight' => false ] ]);
+        return (string) $this->rpc->call('sendTransaction', [$base64Signed, ['encoding' => 'base64', 'skipPreflight' => false]]);
     }
 
-    public function getTransaction(string $signature): array|null
+    public function getTransaction(string $signature): ?array
     {
-        return $this->rpc->call('getTransaction', [ $signature, [ 'maxSupportedTransactionVersion' => 0 ] ]);
+        return $this->rpc->call('getTransaction', [$signature, ['maxSupportedTransactionVersion' => 0]]);
     }
 }

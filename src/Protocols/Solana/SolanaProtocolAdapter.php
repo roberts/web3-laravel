@@ -12,9 +12,7 @@ use Tuupola\Base58;
 
 class SolanaProtocolAdapter implements ProtocolAdapter
 {
-    public function __construct(private SolanaJsonRpcClient $rpc)
-    {
-    }
+    public function __construct(private SolanaJsonRpcClient $rpc) {}
 
     public function protocol(): BlockchainProtocol
     {
@@ -23,7 +21,7 @@ class SolanaProtocolAdapter implements ProtocolAdapter
 
     public function createWallet(array $attributes = [], ?Model $owner = null, ?Blockchain $blockchain = null): Wallet
     {
-        if (!extension_loaded('sodium')) {
+        if (! extension_loaded('sodium')) {
             throw new \RuntimeException('ext-sodium is required for Solana key generation');
         }
 

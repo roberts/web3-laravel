@@ -9,13 +9,12 @@ use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
+use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
 use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
 use Roberts\Web3Laravel\Services\SolanaService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
-use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
-use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
