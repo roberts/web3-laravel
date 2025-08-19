@@ -6,8 +6,8 @@ use InvalidArgumentException;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Protocols\CostEstimatorRouter;
-use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Services\BalanceService;
 
 trait InteractsWithWeb3
@@ -15,11 +15,11 @@ trait InteractsWithWeb3
     // Public helpers
     public function getBalance(string $blockTag = 'latest'): string
     {
-    // Route via BalanceService for all protocols
-    /** @var BalanceService $svc */
-    $svc = app(BalanceService::class);
+        // Route via BalanceService for all protocols
+        /** @var BalanceService $svc */
+        $svc = app(BalanceService::class);
 
-    return $svc->native($this);
+        return $svc->native($this);
     }
 
     // Eloquent-style alias
@@ -36,7 +36,7 @@ trait InteractsWithWeb3
 
             return $evm->getTransactionCount($this->address, $blockTag);
         }
-    throw new InvalidArgumentException('getTransactionCount/nonce not available for this protocol');
+        throw new InvalidArgumentException('getTransactionCount/nonce not available for this protocol');
     }
 
     // Eloquent-style alias
