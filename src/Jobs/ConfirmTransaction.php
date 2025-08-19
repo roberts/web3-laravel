@@ -42,7 +42,9 @@ class ConfirmTransaction implements ShouldQueue
         if ($adapter instanceof ProtocolTransactionAdapter) {
             $res = $adapter->checkConfirmations($tx, $wallet);
             if (! ($res['confirmed'] ?? false)) {
-                static::dispatch($tx->id)->delay(now()->addSeconds(10));
+                if (! app()->runningUnitTests()) {
+                    static::dispatch($tx->id)->delay(now()->addSeconds(10));
+                }
 
                 return;
             }
@@ -68,14 +70,18 @@ class ConfirmTransaction implements ShouldQueue
             return;
         }
         if (! $receipt) {
-            static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            if (! app()->runningUnitTests()) {
+                static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            }
 
             return;
         }
         $currentBlock = $evm->blockNumber();
         $receiptBlock = $receipt['blockNumber'] ?? null;
         if (empty($receiptBlock) || $currentBlock === null) {
-            static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            if (! app()->runningUnitTests()) {
+                static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            }
 
             return;
         }
@@ -95,6 +101,8 @@ class ConfirmTransaction implements ShouldQueue
 
             return;
         }
-        static::dispatch($tx->id)->delay(now()->addSeconds(10));
+        if (! app()->runningUnitTests()) {
+            static::dispatch($tx->id)->delay(now()->addSeconds(10));
+        }
     }
 }

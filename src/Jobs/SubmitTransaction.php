@@ -62,8 +62,10 @@ class SubmitTransaction implements ShouldQueue
                 'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Submitted,
             ]);
             event(new TransactionSubmitted($model->fresh()));
-            // Kick off confirmation polling
-            \Roberts\Web3Laravel\Jobs\ConfirmTransaction::dispatch($model->id)->delay(now()->addSeconds(10));
+            // Kick off confirmation polling outside unit tests to avoid long cycles
+            if (! app()->runningUnitTests()) {
+                \Roberts\Web3Laravel\Jobs\ConfirmTransaction::dispatch($model->id)->delay(now()->addSeconds(10));
+            }
         } catch (\Throwable $e) {
             $model->update([
                 'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Failed,

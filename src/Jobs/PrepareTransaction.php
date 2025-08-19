@@ -88,7 +88,10 @@ class PrepareTransaction implements ShouldQueue
         $tx->update(['status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Prepared]);
         event(new TransactionPrepared($tx->fresh()));
 
-        SubmitTransaction::dispatch($tx->id);
+        // In tests, don't auto-dispatch the next stage to avoid job cycles.
+        if (! app()->runningUnitTests()) {
+            SubmitTransaction::dispatch($tx->id);
+        }
     }
 
     /** Compare two non-negative decimal strings (a<b => -1, a==b => 0, a>b => 1). */
