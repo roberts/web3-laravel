@@ -10,6 +10,7 @@ class Address
     public static function normalize(string $address): string
     {
         $addr = strtolower($address);
+
         return str_starts_with($addr, '0x') ? $addr : ('0x'.$addr);
     }
 
@@ -18,13 +19,13 @@ class Address
      */
     public static function isValidEvm(string $address, bool $strictChecksum = false): bool
     {
-        if (!preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $address)) {
+        if (! preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $address)) {
             return false;
         }
 
         // If all lower or all upper, accept without checksum (unless strict)
         $hex = str_starts_with($address, '0x') ? substr($address, 2) : $address;
-        if (!$strictChecksum && (strtolower($hex) === $hex || strtoupper($hex) === $hex)) {
+        if (! $strictChecksum && (strtolower($hex) === $hex || strtoupper($hex) === $hex)) {
             return true;
         }
 
@@ -80,6 +81,7 @@ class Address
         if ($protocol->isEvm()) {
             return self::isValidEvm($address);
         }
+
         // For non-EVM protocols, defer to other validators in future
         return $address !== '';
     }

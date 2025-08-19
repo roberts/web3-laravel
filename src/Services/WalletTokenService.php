@@ -43,6 +43,7 @@ class WalletTokenService
         // Map addresses to Wallet models (normalize lowercase for EVM; non-hex kept as-is)
         $wallets = Wallet::query()->whereIn('address', $addresses)->get()->keyBy(function ($w) {
             $addr = $w->getRawOriginal('address');
+
             return preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $addr) ? strtolower($addr) : $addr;
         });
 

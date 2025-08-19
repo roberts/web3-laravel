@@ -33,7 +33,7 @@ class TokenBalanceCommand extends Command
         }
 
         // Validate address
-    if (! Address::isValidEvm($address)) {
+        if (! Address::isValidEvm($address)) {
             $this->error("Invalid address: {$address}");
 
             return self::FAILURE;

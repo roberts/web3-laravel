@@ -49,7 +49,7 @@ class TokenMintCommand extends Command
         }
 
         // Validate addresses
-    if (! Address::isValidEvm($to)) {
+        if (! Address::isValidEvm($to)) {
             $this->error("Invalid recipient address: {$to}");
 
             return self::FAILURE;

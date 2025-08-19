@@ -163,7 +163,7 @@ class Wallet extends Model
     // Scopes
     public function scopeByAddress($query, string $address)
     {
-    return $query->where('address', Address::normalize($address));
+        return $query->where('address', Address::normalize($address));
     }
 
     public function scopeForUser($query, Model $user)
@@ -176,6 +176,7 @@ class Wallet extends Model
     {
         if (! $value) {
             $this->attributes['address'] = null;
+
             return;
         }
         // If EVM-like hex, normalize; otherwise store as-is (e.g., Solana base58)

@@ -23,8 +23,8 @@ class TokenTransferCommand extends Command
     {
         $tokenId = $this->argument('token');
         $fromInput = $this->argument('from');
-    $to = (string) $this->argument('to');
-    $amountInput = (string) $this->argument('amount');
+        $to = (string) $this->argument('to');
+        $amountInput = (string) $this->argument('amount');
         $nftTokenId = $this->option('token-id');
 
         // Find token
