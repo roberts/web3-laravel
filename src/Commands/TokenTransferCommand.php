@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Services\TokenService;
+use Roberts\Web3Laravel\Support\Address;
 
 class TokenTransferCommand extends Command
 {
@@ -22,8 +23,8 @@ class TokenTransferCommand extends Command
     {
         $tokenId = $this->argument('token');
         $fromInput = $this->argument('from');
-        $to = $this->argument('to');
-        $amount = $this->argument('amount');
+    $to = (string) $this->argument('to');
+    $amountInput = (string) $this->argument('amount');
         $nftTokenId = $this->option('token-id');
 
         // Find token
@@ -37,7 +38,7 @@ class TokenTransferCommand extends Command
         // Find wallet
         $wallet = is_numeric($fromInput)
             ? Wallet::find($fromInput)
-            : Wallet::where('address', strtolower($fromInput))->first();
+            : Wallet::where('address', Address::normalize($fromInput))->first();
 
         if (! $wallet) {
             $this->error("Wallet not found: {$fromInput}");
@@ -46,18 +47,27 @@ class TokenTransferCommand extends Command
         }
 
         // Validate addresses
-        if (! $this->isValidAddress($to)) {
+        if (! Address::isValidEvm($to)) {
             $this->error("Invalid recipient address: {$to}");
 
             return self::FAILURE;
+        }
+
+        // Normalize and checksum for display
+        $toChecksum = Address::toChecksum($to);
+
+        // Parse human-readable amount to raw based on token decimals (ERC-20 only)
+        $amount = $amountInput;
+        if ($token->getTokenType() === 'erc20') {
+            $amount = $token->parseAmount($amountInput);
         }
 
         try {
             $this->info('Preparing transfer...');
             $this->line("Token: {$token->contract->address} ({$token->getTokenType()})");
             $this->line("From: {$wallet->address}");
-            $this->line("To: {$to}");
-            $this->line("Amount: {$amount}");
+            $this->line("To: {$toChecksum}");
+            $this->line("Amount (raw): {$amount}");
             if ($nftTokenId) {
                 $this->line("Token ID: {$nftTokenId}");
             }
@@ -82,8 +92,5 @@ class TokenTransferCommand extends Command
         }
     }
 
-    private function isValidAddress(string $address): bool
-    {
-        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address);
-    }
+    // Address validation moved to Support\Address
 }

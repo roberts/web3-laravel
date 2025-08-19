@@ -23,7 +23,12 @@ class WalletTokenService
      */
     public function snapshotBalances(Token $token, $walletAddresses): Collection
     {
-        $addresses = collect($walletAddresses)->filter()->values();
+        $addresses = collect($walletAddresses)->filter()->map(function ($addr) {
+            // Normalize EVM, leave non-hex as-is
+            return preg_match('/^(0x)?[0-9a-fA-F]{40}$/', (string) $addr)
+                ? strtolower($addr)
+                : (string) $addr;
+        })->values();
         $now = Carbon::now();
         $updated = collect();
 
@@ -35,11 +40,14 @@ class WalletTokenService
             ->get()
             ->keyBy(fn ($wt) => strtolower($wt->wallet->address));
 
-        // Map addresses to Wallet models
-        $wallets = Wallet::query()->whereIn('address', $addresses)->get()->keyBy(fn ($w) => strtolower($w->address));
+        // Map addresses to Wallet models (normalize lowercase for EVM; non-hex kept as-is)
+        $wallets = Wallet::query()->whereIn('address', $addresses)->get()->keyBy(function ($w) {
+            $addr = $w->getRawOriginal('address');
+            return preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $addr) ? strtolower($addr) : $addr;
+        });
 
         foreach ($addresses as $address) {
-            $addr = strtolower($address);
+            $addr = preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $address) ? strtolower($address) : $address;
             $wallet = $wallets->get($addr);
             if (! $wallet) {
                 // Skip unknown wallets in our DB

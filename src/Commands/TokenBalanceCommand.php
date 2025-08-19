@@ -5,6 +5,7 @@ namespace Roberts\Web3Laravel\Commands;
 use Illuminate\Console\Command;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Services\TokenService;
+use Roberts\Web3Laravel\Support\Address;
 
 class TokenBalanceCommand extends Command
 {
@@ -32,7 +33,7 @@ class TokenBalanceCommand extends Command
         }
 
         // Validate address
-        if (! $this->isValidAddress($address)) {
+    if (! Address::isValidEvm($address)) {
             $this->error("Invalid address: {$address}");
 
             return self::FAILURE;
@@ -64,7 +65,7 @@ class TokenBalanceCommand extends Command
             if ($token->isERC721() && $nftTokenId) {
                 try {
                     $owner = $tokenService->ownerOf($token, $nftTokenId);
-                    $isOwner = strtolower($owner) === strtolower($address);
+                    $isOwner = \Roberts\Web3Laravel\Support\Address::equals($owner, $address);
                     $this->line("Owner: {$owner} ".($isOwner ? '(matches queried address)' : ''));
                 } catch (\Exception $e) {
                     $this->line("Could not fetch owner info: {$e->getMessage()}");
@@ -79,8 +80,5 @@ class TokenBalanceCommand extends Command
         }
     }
 
-    private function isValidAddress(string $address): bool
-    {
-        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address);
-    }
+    // Validation handled by Support\\Address
 }

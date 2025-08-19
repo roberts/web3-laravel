@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Roberts\Web3Laravel\Services\ContractCaller;
+use Roberts\Web3Laravel\Support\Address;
 
 /**
  * @property int $id
@@ -41,12 +42,23 @@ class Contract extends Model
 
     public function setAddressAttribute(?string $value): void
     {
-        $this->attributes['address'] = $value ? strtolower($value) : null;
+        $this->attributes['address'] = $value ? Address::normalize($value) : null;
     }
 
     public function setCreatorAttribute(?string $value): void
     {
-        $this->attributes['creator'] = $value ? strtolower($value) : null;
+        $this->attributes['creator'] = $value ? Address::normalize($value) : null;
+    }
+
+    /** Present addresses in EIP-55 checksum form when accessed. */
+    public function getAddressAttribute(?string $value): ?string
+    {
+        return $value ? Address::normalize($value) : null;
+    }
+
+    public function getCreatorAttribute(?string $value): ?string
+    {
+        return $value ? Address::normalize($value) : null;
     }
 
     // Eloquent-style read-only call shortcut
