@@ -5,6 +5,7 @@ namespace Roberts\Web3Laravel;
 use Roberts\Web3Laravel\Commands\Web3LaravelCommand;
 use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
+use Roberts\Web3Laravel\Services\SolanaService;
 use Roberts\Web3Laravel\Services\TokenService;
 use Roberts\Web3Laravel\Services\TransactionService;
 use Spatie\LaravelPackageTools\Package;
@@ -76,6 +77,10 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(KeyReleaseService::class, function ($app) {
             return new KeyReleaseService;
+        });
+
+        $this->app->singleton(SolanaService::class, function ($app) {
+            return new SolanaService;
         });
 
         // Register event service provider for package

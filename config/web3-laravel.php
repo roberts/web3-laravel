@@ -47,4 +47,8 @@ return [
         // Optional shared secret header to verify origin
         'secret' => null, // set to a string; will be sent as X-Web3Laravel-Secret
     ],
+    // Solana defaults (optional): used for Solana wallet creation when a blockchain row isn't provided
+    'solana' => [
+        'default_rpc' => 'https://api.mainnet-beta.solana.com',
+    ],
 ];

@@ -11,7 +11,7 @@ it('creates a wallet with encrypted key and derived address', function () {
     $wallet = $service->create([], null, $chain);
 
     expect($wallet)->toBeInstanceOf(Wallet::class);
-    expect($wallet->blockchain_id)->toBe($chain->id);
+    expect($wallet->protocol->value)->toBe('evm');
     expect($wallet->address)->toStartWith('0x');
     expect(strlen($wallet->address))->toBe(42);
 

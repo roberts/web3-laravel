@@ -17,7 +17,7 @@ class TransactionFactory extends Factory
 
         return [
             'wallet_id' => $wallet->id,
-            'blockchain_id' => $wallet->blockchain_id,
+            'blockchain_id' => null,
             'to' => '0x'.$this->faker->regexify('[a-f0-9]{40}'),
             'from' => $wallet->address,
             'value' => '0',
@@ -25,7 +25,7 @@ class TransactionFactory extends Factory
             'fee_max' => '0x77359400',
             'priority_max' => '0x3b9aca00',
             'is_1559' => true,
-            'chain_id' => $wallet->blockchain?->chain_id,
+            'chain_id' => config('web3-laravel.default_chain_id'),
             'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Pending,
         ];
     }

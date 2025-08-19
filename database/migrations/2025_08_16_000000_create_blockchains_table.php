@@ -15,7 +15,8 @@ return new class extends Migration
             $table->unsignedBigInteger('chain_id'); // EVM chain id
             $table->string('rpc'); // primary RPC URL
             $table->string('scanner')->nullable(); // block explorer base URL
-            $table->boolean('evm')->default(true); // EVM-compatible
+            // protocol field below replaces legacy 'evm' boolean
+            $table->string('protocol')->default('evm'); // evm | solana
             // Suggested helpful fields
             $table->boolean('supports_eip1559')->default(true);
             $table->string('native_symbol', 16)->default('ETH');

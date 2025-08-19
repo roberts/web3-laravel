@@ -4,7 +4,6 @@ namespace Roberts\Web3Laravel\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Roberts\Web3Laravel\Enums\WalletType;
-use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 
 /**
@@ -21,7 +20,7 @@ class WalletFactory extends Factory
             'key' => '0x'.strtolower(bin2hex(random_bytes(32))), // will be encrypted by mutator
             'wallet_type' => WalletType::CUSTODIAL,
             'owner_id' => null,
-            'blockchain_id' => Blockchain::factory(),
+            'protocol' => \Roberts\Web3Laravel\Enums\BlockchainProtocol::EVM,
             'is_active' => true,
             'last_used_at' => null,
             'meta' => null,

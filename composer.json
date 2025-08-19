@@ -17,9 +17,11 @@
     ],
     "require": {
         "php": "^8.3",
-    "illuminate/contracts": "^12.0",
+    "ext-sodium": "*",
+        "illuminate/contracts": "^12.0",
         "simplito/elliptic-php": "^1.0",
         "spatie/laravel-package-tools": "^1.16",
+    "tuupola/base58": "^2.0",
         "web3p/ethereum-tx": "^0.3",
         "web3p/web3.php": "dev-master"
     },

@@ -26,7 +26,7 @@ class WalletListCommand extends Command
             return [
                 'id' => $w->id,
                 'address' => $w->address,
-                'blockchain_id' => $w->blockchain_id,
+        'protocol' => (string) $w->protocol->value,
                 'owner_id' => $w->owner_id ?? '-',
                 'active' => $w->is_active ? 'yes' : 'no',
                 'last_used_at' => optional($w->last_used_at)->toDateTimeString(),
@@ -34,7 +34,7 @@ class WalletListCommand extends Command
             ];
         })->all();
 
-        $this->table(['ID', 'Address', 'Chain', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
+    $this->table(['ID', 'Address', 'Protocol', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
 
         return self::SUCCESS;
     }

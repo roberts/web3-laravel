@@ -20,6 +20,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'ETH',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
                 'is_default' => false,
             ],
             [
@@ -31,6 +32,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'ETH',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
                 'is_default' => true,
             ],
             [
@@ -42,6 +44,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'POL',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
             ],
             [
                 'name' => 'Arbitrum One',
@@ -52,6 +55,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'ETH',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
             ],
             [
                 'name' => 'Optimism',
@@ -62,6 +66,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'ETH',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
             ],
             // Others requested
             [
@@ -73,6 +78,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'ETH',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
             ],
             [
                 'name' => 'ApeChain',
@@ -83,6 +89,20 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'APE',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
+            ],
+            // Non-EVM
+            [
+                'name' => 'Solana',
+                'abbreviation' => 'SOL',
+                'chain_id' => 0, // placeholder; Solana does not use EVM chain IDs
+                'rpc' => 'https://api.mainnet-beta.solana.com',
+                'scanner' => 'https://explorer.solana.com',
+                'native_symbol' => 'SOL',
+                'native_decimals' => 9,
+                'supports_eip1559' => false,
+                'protocol' => 'solana',
+                'is_default' => false,
             ],
             // Testnets
             [
@@ -94,6 +114,7 @@ class BlockchainSeeder extends Seeder
                 'native_symbol' => 'ETH',
                 'native_decimals' => 18,
                 'supports_eip1559' => true,
+                'protocol' => 'evm',
             ],
         ];
 
@@ -101,7 +122,7 @@ class BlockchainSeeder extends Seeder
             Blockchain::updateOrCreate(
                 ['chain_id' => $c['chain_id']],
                 array_merge([
-                    'evm' => true,
+                    'protocol' => $c['protocol'],
                     'is_active' => true,
                 ], $c)
             );

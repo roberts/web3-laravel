@@ -14,7 +14,7 @@ return new class extends Migration
             $table->text('key')->nullable(); // encrypted private key (Crypt)
             $table->string('wallet_type')->default('custodial'); // custodial, shared, external
             $table->foreignId('owner_id')->nullable()->constrained('users'); // fixed owner to users table
-            $table->foreignId('blockchain_id')->nullable()->constrained('blockchains');
+            $table->string('protocol')->default('evm'); // BlockchainProtocol: evm|solana
             $table->boolean('is_active')->default(true);
             $table->timestamp('last_used_at')->nullable();
             $table->json('meta')->nullable();

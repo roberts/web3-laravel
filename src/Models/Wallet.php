@@ -6,12 +6,12 @@ use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo as EloquentBelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
+use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Enums\WalletType;
 
 /**
@@ -19,12 +19,11 @@ use Roberts\Web3Laravel\Enums\WalletType;
  * @property string $address
  * @property string|null $key
  * @property WalletType $wallet_type
- * @property int|null $blockchain_id
+ * @property \Roberts\Web3Laravel\Enums\BlockchainProtocol $protocol
  * @property int|null $owner_id
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $last_used_at
  * @property array|null $meta
- * @property-read Blockchain|null $blockchain
  * @property-read \Illuminate\Foundation\Auth\User|null $user
  */
 class Wallet extends Model
@@ -38,11 +37,11 @@ class Wallet extends Model
     protected $hidden = ['key']; // never expose the encrypted key in arrays/json
 
     protected $casts = [
-        'blockchain_id' => 'integer',
         'wallet_type' => WalletType::class,
         'is_active' => 'boolean',
         'last_used_at' => 'datetime',
         'meta' => 'array',
+    'protocol' => BlockchainProtocol::class,
     ];
 
     // Relationships
@@ -54,10 +53,7 @@ class Wallet extends Model
         return $this->belongsTo($userModel, 'owner_id');
     }
 
-    public function blockchain(): BelongsTo
-    {
-        return $this->belongsTo(Blockchain::class);
-    }
+    // Note: Wallet no longer belongs to a specific blockchain; it carries a protocol instead.
 
     /**
      * Get key releases for this wallet.

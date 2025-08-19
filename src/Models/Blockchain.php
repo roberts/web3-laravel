@@ -4,6 +4,7 @@ namespace Roberts\Web3Laravel\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 
 /**
  * @property int $id
@@ -13,10 +14,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $ws_url
  * @property string $native_symbol
  * @property int $native_decimals
- * @property bool $evm
  * @property bool $supports_eip1559
  * @property bool $is_active
  * @property bool $is_default
+ * @property \Roberts\Web3Laravel\Enums\BlockchainProtocol $protocol
  */
 class Blockchain extends Model
 {
@@ -28,10 +29,10 @@ class Blockchain extends Model
 
     protected $casts = [
         'chain_id' => 'integer',
-        'evm' => 'boolean',
         'supports_eip1559' => 'boolean',
         'native_decimals' => 'integer',
         'is_active' => 'boolean',
         'is_default' => 'boolean',
+    'protocol' => BlockchainProtocol::class,
     ];
 }

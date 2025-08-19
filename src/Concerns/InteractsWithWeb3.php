@@ -9,22 +9,14 @@ use Web3\Web3;
 
 trait InteractsWithWeb3
 {
-    /** Get a Web3 client for this wallet's blockchain. */
+    /** Get a Web3 client for this wallet's blockchain (EVM only). */
     public function web3(): Web3
     {
         /** @var Web3Manager $manager */
         $manager = app(Web3Manager::class);
 
-        $rpc = null;
-        $chainId = null;
-        /** @var Blockchain|null $chain */
-        $chain = $this->blockchain ?? null;
-        if ($chain instanceof Blockchain) {
-            $chainId = $chain->chain_id ?? null;
-            $rpc = $chain->rpc ?? null;
-        }
-
-        return $manager->web3($chainId, $rpc);
+        // Without a bound blockchain, fall back to configured defaults.
+        return $manager->web3(null, null);
     }
 
     /** Low-level ETH proxy. */

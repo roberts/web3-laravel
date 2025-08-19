@@ -40,9 +40,9 @@ class PrepareTransaction implements ShouldQueue
             return;
         }
 
-        // Ensure chain id present
+        // Ensure chain id present (EVM default)
         if (empty($tx->chain_id)) {
-            $chainId = $wallet->blockchain->chain_id ?? config('web3-laravel.default_chain_id');
+            $chainId = config('web3-laravel.default_chain_id');
             $tx->chain_id = (int) $chainId;
         }
 

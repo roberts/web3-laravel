@@ -17,7 +17,7 @@ class BlockchainFactory extends Factory
             'chain_id' => $this->faker->numberBetween(1, 10_000_000),
             'rpc' => $this->faker->url(),
             'scanner' => $this->faker->optional()->url(),
-            'evm' => true,
+            'protocol' => 'evm',
             'supports_eip1559' => true,
             'native_symbol' => 'ETH',
             'native_decimals' => 18,
