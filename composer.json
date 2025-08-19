@@ -17,12 +17,13 @@
     ],
     "require": {
         "php": "^8.3",
-    "ext-sodium": "*",
+        "ext-sodium": "*",
+        "ext-gmp": "*",
         "illuminate/contracts": "^12.0",
-    "simplito/elliptic-php": "^1.0",
-    "spatie/laravel-package-tools": "^1.16",
-    "tuupola/base58": "^2.0",
-    "kornrunner/keccak": "^1.1"
+        "simplito/elliptic-php": ">=1.0.12",
+        "spatie/laravel-package-tools": "^1.16",
+        "tuupola/base58": "^2.0",
+        "kornrunner/keccak": "^1.1"
     },
     "require-dev": {
         "laravel/pint": "^1.14",
@@ -32,6 +33,7 @@
     "pestphp/pest": "^3.0",
     "pestphp/pest-plugin-arch": "^3.0",
     "pestphp/pest-plugin-laravel": "^3.0",
+        "cweagans/composer-patches": "^1.7",
         "phpstan/extension-installer": "^1.3",
         "phpstan/phpstan-deprecation-rules": "^1.1||^2.0",
         "phpstan/phpstan-phpunit": "^1.3||^2.0"
@@ -60,10 +62,16 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "phpstan/extension-installer": true
+            "phpstan/extension-installer": true,
+            "cweagans/composer-patches": true
         }
     },
     "extra": {
+        "patches": {
+            "simplito/elliptic-php": {
+                "Fix Point::fromJSON $points to $point assignment": "patches/elliptic-point-fromjson.patch"
+            }
+        },
         "laravel": {
             "providers": [
                 "Roberts\\Web3Laravel\\Web3LaravelServiceProvider"

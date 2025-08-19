@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Web3 Laravel <dev@local>
+Date: Tue, 19 Aug 2025 12:00:00 +0000
+Subject: [PATCH] Fix Point::fromJSON: assign to $point->precomputed not $points
+
+---
+ lib/Curve/ShortCurve/Point.php | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lib/Curve/ShortCurve/Point.php b/lib/Curve/ShortCurve/Point.php
+index 1111111..2222222 100644
+--- a/lib/Curve/ShortCurve/Point.php
++++ b/lib/Curve/ShortCurve/Point.php
+@@ -143,10 +143,10 @@ class Point extends \Elliptic\Curve\BaseCurve\Point implements JsonSerializab
+         if( isset($pre["naf"]) )
+         {
+             $tmp = array_map($obj2point, $pre["naf"]["points"]);
+             array_unshift($tmp, $point);
+-            $points->precomputed["naf"] = array(
++            $point->precomputed["naf"] = array(
+                 "wnd" => $pre["naf"]["wnd"],
+                 "points" => $tmp
+             );
+         }
+ 
+         return $point;
+     }
+-- 
+2.39.2
