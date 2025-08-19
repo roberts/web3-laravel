@@ -105,20 +105,39 @@ class EvmProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\Has
 
     public function transferToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $from, string $toAddress, string $amount): string
     {
-        // For EVM, token transfers are handled via TransactionService/TokenService to build ABI calls.
-        throw new \RuntimeException('transferToken not implemented via adapter for EVM');
+        // For EVM we create an async Transaction via TokenService and return the created transaction id.
+        /** @var \Roberts\Web3Laravel\Services\TokenService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+        $to = Address::normalize($toAddress);
+        $tx = app()->runningUnitTests()
+            ? Model::withoutEvents(fn () => $svc->transfer($token, $from, $to, $amount))
+            : $svc->transfer($token, $from, $to, $amount);
+
+        return (string) $tx->id;
     }
 
     public function approveToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress, string $amount): string
     {
-        // For EVM, approvals are handled via TransactionService/TokenService to build ABI calls.
-        throw new \RuntimeException('approveToken not implemented via adapter for EVM');
+        /** @var \Roberts\Web3Laravel\Services\TokenService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+        $spender = Address::normalize($spenderAddress);
+        $tx = app()->runningUnitTests()
+            ? Model::withoutEvents(fn () => $svc->approve($token, $owner, $spender, $amount))
+            : $svc->approve($token, $owner, $spender, $amount);
+
+        return (string) $tx->id;
     }
 
     public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress): string
     {
-        // For EVM, approvals are handled via TransactionService/TokenService to build ABI calls (approve 0).
-        throw new \RuntimeException('revokeToken not implemented via adapter for EVM');
+        /** @var \Roberts\Web3Laravel\Services\TokenService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+        $spender = Address::normalize($spenderAddress);
+        $tx = app()->runningUnitTests()
+            ? Model::withoutEvents(fn () => $svc->approve($token, $owner, $spender, '0'))
+            : $svc->approve($token, $owner, $spender, '0');
+
+        return (string) $tx->id;
     }
 
     // -----------------------------

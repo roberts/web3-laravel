@@ -2,9 +2,6 @@
 
 // config for Roberts/Web3Laravel
 return [
-    // Driver for EVM calls: 'web3php' (default) or 'native'
-    'driver' => 'web3php',
-
     // Use database 'blockchains' table to resolve networks when true
     'use_database' => true,
 
@@ -14,10 +11,10 @@ return [
     // Default chain id to use when a chain id isn't provided
     'default_chain_id' => 8453, // Base mainnet by default
 
-    // Request timeout for HTTP/WebSocket providers (seconds)
+    // Request timeout for HTTP providers (seconds)
     'request_timeout' => 10,
 
-    // Native JSON-RPC client settings (used when driver = 'native')
+    // Native JSON-RPC client settings
     'rpc' => [
         'retries' => 2,
         'backoff_ms' => 200,
@@ -31,17 +28,8 @@ return [
     // Required confirmations for a transaction to be considered 'confirmed'
     'confirmations_required' => 6,
 
-    // Confirmation strategy: 'polling' (default) or 'websocket'.
-    // When set to 'websocket', run the watcher command to track new blocks.
-    'confirmations_mode' => 'polling',
-    // Polling interval in seconds (used by polling job/watcher fallback)
+    // Polling interval in seconds (used by watcher)
     'confirmations_poll_interval' => 10,
-
-    // Optional WebSocket endpoints. If not set, we try to convert HTTP to WS (http=>ws, https=>wss).
-    'default_ws' => null,
-    'ws_networks' => [
-        // 8453 => 'wss://mainnet.base.org',
-    ],
 
     // Optional static chainId=>rpc mapping. This takes priority over DB when set.
     // Example:

@@ -10,6 +10,5 @@ parameters:
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
-    stubFiles:
-        - stubs/web3-php.methods.stub.php
+    # No stub files required; native clients only
     treatPhpDocTypesAsCertain: false

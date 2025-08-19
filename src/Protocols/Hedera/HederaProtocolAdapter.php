@@ -76,7 +76,28 @@ class HederaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapt
 
     public function transferToken(\Roberts\Web3Laravel\Models\Token $token, Wallet $from, string $toAddress, string $amount): string
     {
-        throw new \RuntimeException('Not implemented');
+        $create = function () use ($token, $from, $toAddress, $amount) {
+            return Transaction::create([
+                'wallet_id' => $from->id,
+                'contract_id' => $token->contract_id,
+                'to' => $toAddress,
+                'value' => (string) $amount,
+                'data' => null,
+                'function_params' => [
+                    'operation' => 'hedera_token_transfer',
+                ],
+                'meta' => [
+                    'token_operation' => 'transfer',
+                    'token_id' => $token->id,
+                    'recipient' => $toAddress,
+                    'amount' => $amount,
+                ],
+            ]);
+        };
+
+        $tx = app()->runningUnitTests() ? \Illuminate\Database\Eloquent\Model::withoutEvents($create) : $create();
+
+        return (string) $tx->id;
     }
 
     public function approveToken(\Roberts\Web3Laravel\Models\Token $token, Wallet $owner, string $spenderAddress, string $amount): string

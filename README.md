@@ -5,7 +5,38 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/roberts/web3-laravel/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/roberts/web3-laravel/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/roberts/web3-laravel.svg?style=flat-square)](https://packagist.org/packages/roberts/web3-laravel)
 
-This Laravel package provides a protocol-first toolkit to create wallets and interact with EVM chains using a native JSON-RPC client and a built-in transaction signer (legacy + EIP-1559). No web3.php dependency.
+This Laravel package provides a protocol-first, chain-agnostic toolkit to create wallets and interact with multiple chains via per-protocol adapters. It includes a native EVM JSON-RPC client and built-in transaction signer (legacy + EIP-1559). No web3.php dependency.
+
+## Supported blockchains
+
+Web3 Laravel is chain-agnostic with per-protocol adapters. You can create wallets for all chains below, and execute native transfers where supported:
+
+- EVM (Ethereum-compatible)
+    - Wallets: yes
+    - Transactions: native and ERC-20 supported (legacy and EIP-1559)
+- Solana
+    - Wallets: yes (ed25519)
+    - Transactions: native SOL transfers and SPL token approve/transfer supported
+- XRPL
+    - Wallets: yes (ed25519 or secp256k1)
+    - Transactions: prepare/confirm implemented; submit via server-side sign helper (client-side signing WIP)
+- Sui
+    - Wallets: yes (ed25519)
+    - Transactions: native SUI transfers via txBytes builder (sign and execute)
+- Bitcoin
+    - Wallets: yes (secp256k1 Bech32 P2WPKH)
+    - Transactions: stubs in place (prepare/confirm placeholders)
+- Cardano
+    - Wallets: yes (placeholder)
+    - Transactions: stubs in place (prepare/confirm placeholders)
+- Hedera
+    - Wallets: yes (ed25519 placeholder account format)
+    - Transactions: stubs in place (prepare/confirm placeholders)
+- Ton
+    - Wallets: yes (ed25519 placeholder)
+    - Transactions: stubs in place (prepare/confirm placeholders)
+
+The protocol router and cost estimator route calls to the correct adapter automatically based on the wallet’s protocol. As implementations mature, you can extend or replace adapters without changing your app code.
 
 ## Installation
 
@@ -590,7 +621,7 @@ RPC & Provider Management: The package should allow for easy configuration of th
 
 Wallet Management: A key feature is the ability to securely handle Ethereum wallets. The package should provide a method to:
 
-Generate new wallets using web3.php's offline key generation.
+Generate new wallets with the package's native key engines (secp256k1 and ed25519), without any web3.php dependency.
 
 Encrypt and decrypt private keys using Laravel's built-in Crypt facade, ensuring private keys are never stored in plain text.
 

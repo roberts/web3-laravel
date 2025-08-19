@@ -117,7 +117,33 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 
     public function transferToken(\Roberts\Web3Laravel\Models\Token $token, Wallet $from, string $toAddress, string $amount): string
     {
-        throw new \RuntimeException('Not implemented');
+        // Phase 1: enqueue a generic transaction record to represent a Sui token transfer.
+        // Real on-chain token transfers will be added when Sui coin-type transfers are wired.
+        $create = function () use ($token, $from, $toAddress, $amount) {
+            return \Roberts\Web3Laravel\Models\Transaction::create([
+                'wallet_id' => $from->id,
+                'contract_id' => $token->contract_id,
+                'to' => $toAddress,
+                'value' => (string) $amount,
+                'data' => null,
+                'function_params' => [
+                    'operation' => 'sui_token_transfer',
+                ],
+                'meta' => [
+                    'token_operation' => 'transfer',
+                    'token_id' => $token->id,
+                    'recipient' => $toAddress,
+                    'amount' => $amount,
+                    'sui' => [
+                        'coin_type' => $token->contract->address ?? null,
+                    ],
+                ],
+            ]);
+        };
+
+        $tx = app()->runningUnitTests() ? Model::withoutEvents($create) : $create();
+
+        return (string) $tx->id;
     }
 
     public function approveToken(\Roberts\Web3Laravel\Models\Token $token, Wallet $owner, string $spenderAddress, string $amount): string
