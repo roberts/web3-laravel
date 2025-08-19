@@ -13,4 +13,8 @@ class EventServiceProvider extends ServiceProvider
             SignAndSendTransaction::class,
         ],
     ];
+
+    protected $subscribe = [
+        \Roberts\Web3Laravel\Listeners\SendBalanceUpdateWebhook::class,
+    ];
 }

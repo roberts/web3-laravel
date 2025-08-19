@@ -38,4 +38,13 @@ return [
         // Prefer Base by default
         8453 => 'https://mainnet.base.org',
     ],
+
+    // Optional webhooks to notify on token balance/allowance updates.
+    // If null or empty, no webhook is sent.
+    'webhooks' => [
+        'balance_updates' => null,
+        'allowance_updates' => null,
+        // Optional shared secret header to verify origin
+        'secret' => null, // set to a string; will be sent as X-Web3Laravel-Secret
+    ],
 ];

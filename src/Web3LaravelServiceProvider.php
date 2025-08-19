@@ -31,6 +31,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 'create_tokens_table',
                 'create_transactions_table',
                 'create_key_releases_table',
+                'create_wallet_tokens_table',
             ])
             ->hasCommands([
                 Web3LaravelCommand::class,
@@ -42,6 +43,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
                 \Roberts\Web3Laravel\Commands\TokenMintCommand::class,
                 \Roberts\Web3Laravel\Commands\TokenTransferCommand::class,
                 \Roberts\Web3Laravel\Console\Commands\WatchConfirmationsCommand::class,
+                \Roberts\Web3Laravel\Commands\WalletTokenSnapshotCommand::class,
             ]);
     }
 
@@ -63,6 +65,12 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             return new TokenService(
                 $app->make(ContractCaller::class),
                 $app->make(TransactionService::class)
+            );
+        });
+
+        $this->app->singleton(\Roberts\Web3Laravel\Services\WalletTokenService::class, function ($app) {
+            return new \Roberts\Web3Laravel\Services\WalletTokenService(
+                $app->make(TokenService::class)
             );
         });
 

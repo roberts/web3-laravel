@@ -55,6 +55,14 @@ class Token extends Model
     }
 
     /**
+     * Wallet-token tracked balances for this token.
+     */
+    public function walletTokens(): HasMany
+    {
+        return $this->hasMany(WalletToken::class);
+    }
+
+    /**
      * Get the balance for a specific wallet address.
      */
     public function getBalance(string $walletAddress): string
@@ -79,9 +87,7 @@ class Token extends Model
      */
     public function getHolders(): \Illuminate\Support\Collection
     {
-        // This would typically query a wallet_tokens table or use blockchain data
-        // Placeholder implementation
-        return collect();
+        return $this->walletTokens()->with('wallet')->get()->pluck('wallet');
     }
 
     /**
@@ -225,5 +231,15 @@ class Token extends Model
     public function getTokenTypeAttribute(): string
     {
         return 'erc20';
+    }
+
+    /**
+     * Convenience: check allowance for owner->spender on this token.
+     */
+    public function allowance(string $owner, string $spender): string
+    {
+        $service = app(TokenService::class);
+
+        return $service->allowance($this, $owner, $spender);
     }
 }

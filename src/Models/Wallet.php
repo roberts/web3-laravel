@@ -76,6 +76,35 @@ class Wallet extends Model
     }
 
     /**
+     * Get all ERC-20 balances tracked for this wallet.
+     */
+    public function tokens(): HasMany
+    {
+        return $this->hasMany(WalletToken::class);
+    }
+
+    /**
+     * Convenience: get a specific tracked token balance (raw), or null.
+     */
+    public function tokenBalanceFor(Token $token): ?string
+    {
+        /** @var WalletToken|null $row */
+        $row = $this->tokens()->where('token_id', $token->id)->first();
+
+        return $row?->balance;
+    }
+
+    /**
+     * Convenience: check ERC-20 allowance from this wallet (owner) to a spender.
+     */
+    public function allowance(Token $token, string $spender): string
+    {
+        $service = app(\Roberts\Web3Laravel\Services\TokenService::class);
+
+        return $service->allowance($token, $this->address, $spender);
+    }
+
+    /**
      * Get NFTs from a specific collection.
      */
     public function nftsFromCollection(NftCollection $collection): HasMany
