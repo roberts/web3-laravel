@@ -109,28 +109,44 @@ class Wallet extends Model
 
     // Named convenience methods per protocol
     public static function evm(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::EVM, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::EVM, $attributes, $owner, $blockchain);
+    }
 
     public static function solana(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::SOLANA, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::SOLANA, $attributes, $owner, $blockchain);
+    }
 
     public static function bitcoin(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::BITCOIN, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::BITCOIN, $attributes, $owner, $blockchain);
+    }
 
     public static function sui(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::SUI, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::SUI, $attributes, $owner, $blockchain);
+    }
 
     public static function xrpl(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::XRPL, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::XRPL, $attributes, $owner, $blockchain);
+    }
 
     public static function cardano(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::CARDANO, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::CARDANO, $attributes, $owner, $blockchain);
+    }
 
     public static function hedera(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::HEDERA, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::HEDERA, $attributes, $owner, $blockchain);
+    }
 
     public static function ton(array $attributes = [], ?EloquentModel $owner = null, ?Blockchain $blockchain = null): self
-    { return self::createForProtocol(BlockchainProtocol::TON, $attributes, $owner, $blockchain); }
+    {
+        return self::createForProtocol(BlockchainProtocol::TON, $attributes, $owner, $blockchain);
+    }
 
     /**
      * Get all ERC-20 balances tracked for this wallet.

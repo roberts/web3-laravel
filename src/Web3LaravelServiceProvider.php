@@ -18,8 +18,8 @@ use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaService as ProtocolSolanaService;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaSigner;
 use Roberts\Web3Laravel\Protocols\Sui\SuiProtocolAdapter;
-use Roberts\Web3Laravel\Protocols\Xrpl\XrplProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Ton\TonProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Xrpl\XrplProtocolAdapter;
 use Roberts\Web3Laravel\Services\BalanceService;
 use Roberts\Web3Laravel\Services\ContractCaller;
 use Roberts\Web3Laravel\Services\KeyReleaseService;
@@ -169,7 +169,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             $app->singleton(BitcoinProtocolAdapter::class, fn ($app) => new BitcoinProtocolAdapter($app->make(KeyEngineInterface::class)));
             $app->singleton(SuiProtocolAdapter::class, fn ($app) => new SuiProtocolAdapter($app->make(KeyEngineInterface::class)));
             $app->singleton(XrplProtocolAdapter::class, fn ($app) => new XrplProtocolAdapter($app->make(KeyEngineInterface::class)));
-            $app->singleton(TonProtocolAdapter::class, fn ($app) => new TonProtocolAdapter());
+            $app->singleton(TonProtocolAdapter::class, fn ($app) => new TonProtocolAdapter);
             $router->register($app->make(BitcoinProtocolAdapter::class));
             $router->register($app->make(SuiProtocolAdapter::class));
             $router->register($app->make(XrplProtocolAdapter::class));

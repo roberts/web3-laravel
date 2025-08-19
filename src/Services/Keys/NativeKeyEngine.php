@@ -229,7 +229,7 @@ class NativeKeyEngine implements KeyEngineInterface
             default:
                 // Fallback for future enum additions
                 return ['0x'.strtolower(bin2hex(random_bytes(32))), ''];
-    }
+        }
 
     }
 
@@ -271,12 +271,13 @@ class NativeKeyEngine implements KeyEngineInterface
                 // Placeholder TON address: base64url(workchain||sha256(pubkey)[:32])
                 $hash = hash('sha256', $publicKeyBytes, true);
                 $raw = "\x00".substr($hash, 0, 32);
+
                 return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
             case BlockchainProtocol::EVM:
                 // EVM address derives from Keccak(pubkey); handled elsewhere
                 return '';
             default:
                 return '';
-    }
+        }
     }
 }

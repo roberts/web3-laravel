@@ -8,6 +8,7 @@ use Roberts\Web3Laravel\Services\WalletService;
 it('creates a ton wallet with placeholder address and encrypted key', function () {
     if (! extension_loaded('sodium')) {
         $this->markTestSkipped('sodium not available');
+
         return;
     }
     $chain = Blockchain::factory()->create([

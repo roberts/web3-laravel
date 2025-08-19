@@ -4,10 +4,8 @@ namespace Roberts\Web3Laravel\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Services\WalletService;
 
 class WalletCreateCommand extends Command
 {
@@ -21,8 +19,8 @@ class WalletCreateCommand extends Command
         $ownerId = $this->option('ownerId');
         $chainId = $this->option('chainId');
         $blockchainId = $this->option('blockchainId');
-    $protocol = $this->option('protocol');
-    $network = $this->option('network');
+        $protocol = $this->option('protocol');
+        $network = $this->option('network');
 
         $owner = null;
         if ($ownerType && $ownerId) {
