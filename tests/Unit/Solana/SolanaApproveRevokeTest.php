@@ -10,7 +10,8 @@ use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
 use Tuupola\Base58;
 
-function b58_32(): string {
+function b58_32(): string
+{
     return (new Base58(['characters' => Base58::BITCOIN]))->encode(random_bytes(32));
 }
 

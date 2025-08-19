@@ -83,7 +83,7 @@ class TokenApproveCommand extends Command
                     $tx = $tokenService->approve($token, $wallet, $spenderNorm, $amount);
                 }
                 $this->info("Approval transaction created with ID: {$tx->id}");
-                $this->line("Status: ".$tx->statusValue());
+                $this->line('Status: '.$tx->statusValue());
             } elseif ($wallet->protocol->isSolana()) {
                 $sig = $adapter->approveToken($token, $wallet, $spenderNorm, $amount);
                 $this->info('SPL token approve submitted');

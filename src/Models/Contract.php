@@ -65,14 +65,14 @@ class Contract extends Model
             return null;
         }
 
-    // If blockchain protocol is EVM or it looks like hex, return normalized lowercase; else return raw
+        // If blockchain protocol is EVM or it looks like hex, return normalized lowercase; else return raw
         try {
             $protocol = ($this->blockchain instanceof \Roberts\Web3Laravel\Models\Blockchain)
                 ? $this->blockchain->protocol
                 : null;
             $isHex = (bool) preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $value);
             if (($protocol && $protocol->isEvm()) || $isHex) {
-        return Address::normalize($value);
+                return Address::normalize($value);
             }
 
             return $value;

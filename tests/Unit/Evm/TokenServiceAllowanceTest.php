@@ -17,8 +17,13 @@ it('returns allowance for erc20 via ContractCaller', function () {
 
     // Bind a fake ContractCaller that returns a fixed allowance
     app()->bind(ContractCaller::class, function () {
-        return new class(app(\Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface::class)) extends ContractCaller {
-            public function __construct($evm) { parent::__construct($evm); }
+        return new class(app(\Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface::class)) extends ContractCaller
+        {
+            public function __construct($evm)
+            {
+                parent::__construct($evm);
+            }
+
             public function call(array $abi, string $to, string $function, array $params = [], ?string $from = null, string $blockTag = 'latest'): array
             {
                 return ['777'];
