@@ -15,6 +15,7 @@ it('returns EVM nonce (hex) via SequenceService', function () {
             {
                 return 1;
             }
+
             public function getBalance(string $address, string $blockTag = 'latest'): string
             {
                 return '0x0';

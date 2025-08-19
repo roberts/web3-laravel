@@ -29,6 +29,7 @@ it('sequence() returns EVM hex nonce via trait', function () {
             {
                 return 1;
             }
+
             public function getBalance(string $address, string $blockTag = 'latest'): string
             {
                 return '0x0';
@@ -125,6 +126,7 @@ it('sequence() returns XRPL integer via trait', function () {
         return new class extends XrplJsonRpcClient
         {
             public function __construct() {}
+
             public function accountInfo(string $address): array
             {
                 return ['account_data' => ['Sequence' => 9, 'Balance' => '0']];
@@ -144,6 +146,7 @@ it('transferNative uses EVM adapter and returns tx hash', function () {
             {
                 return 1;
             }
+
             public function getBalance(string $address, string $blockTag = 'latest'): string
             {
                 return '0x0';
