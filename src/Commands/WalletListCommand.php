@@ -13,8 +13,8 @@ class WalletListCommand extends Command
 
     public function handle(): int
     {
-    $ownerId = $this->option('ownerId');
-    $protocolOpt = $this->option('protocol');
+        $ownerId = $this->option('ownerId');
+        $protocolOpt = $this->option('protocol');
 
         $query = Wallet::query();
         if ($ownerId) {
@@ -45,7 +45,7 @@ class WalletListCommand extends Command
             ];
         })->all();
 
-    $this->table(['ID', 'Address', 'Protocol', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
+        $this->table(['ID', 'Address', 'Protocol', 'Owner', 'Active', 'Last Used', 'Key'], $rows);
 
         return self::SUCCESS;
     }

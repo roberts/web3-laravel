@@ -18,7 +18,7 @@ class WalletTokenSnapshotCommand extends Command
     public function handle(WalletTokenService $service): int
     {
         $tokenId = (int) $this->argument('token');
-    $addresses = (array) $this->argument('addresses');
+        $addresses = (array) $this->argument('addresses');
         $spender = $this->option('allowance');
 
         $token = Token::find($tokenId);
@@ -33,8 +33,10 @@ class WalletTokenSnapshotCommand extends Command
             $s = (string) $arg;
             if (ctype_digit($s)) {
                 $w = \Roberts\Web3Laravel\Models\Wallet::find((int) $s);
+
                 return $w?->getRawOriginal('address') ?? $s;
             }
+
             return $s;
         })->all();
 
@@ -44,9 +46,10 @@ class WalletTokenSnapshotCommand extends Command
 
         // Print a compact table of results per wallet
         if (count($rows) > 0) {
-            $display = collect($rows)->map(function ($row) use ($token) {
+            $display = collect($rows)->map(function ($row) {
                 /** @var \Roberts\Web3Laravel\Models\WalletToken $row */
-                $wallet = $row->wallet; 
+                $wallet = $row->wallet;
+
                 return [
                     'wallet_id' => $wallet->id,
                     'address' => $wallet->address,
@@ -58,7 +61,7 @@ class WalletTokenSnapshotCommand extends Command
             $this->table(['Wallet', 'Address', 'Protocol', 'Balance (raw)', 'Last Synced'], $display);
         }
 
-    if ($spender) {
+        if ($spender) {
             $this->info('Snapshotting allowances...');
             $count = 0;
             foreach ($rows as $row) {
