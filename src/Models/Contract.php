@@ -42,7 +42,15 @@ class Contract extends Model
 
     public function setAddressAttribute(?string $value): void
     {
-        $this->attributes['address'] = $value ? Address::normalize($value) : null;
+        if (! $value) {
+            $this->attributes['address'] = null;
+
+            return;
+        }
+
+        // Only normalize if EVM-like hex; otherwise store as-is (e.g., Solana base58)
+        $isHex = (bool) preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $value);
+        $this->attributes['address'] = $isHex ? Address::normalize($value) : $value;
     }
 
     public function setCreatorAttribute(?string $value): void
@@ -53,7 +61,24 @@ class Contract extends Model
     /** Present addresses in EIP-55 checksum form when accessed. */
     public function getAddressAttribute(?string $value): ?string
     {
-        return $value ? Address::normalize($value) : null;
+        if (! $value) {
+            return null;
+        }
+
+    // If blockchain protocol is EVM or it looks like hex, return normalized lowercase; else return raw
+        try {
+            $protocol = ($this->blockchain instanceof \Roberts\Web3Laravel\Models\Blockchain)
+                ? $this->blockchain->protocol
+                : null;
+            $isHex = (bool) preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $value);
+            if (($protocol && $protocol->isEvm()) || $isHex) {
+        return Address::normalize($value);
+            }
+
+            return $value;
+        } catch (\Throwable $e) {
+            return $value;
+        }
     }
 
     public function getCreatorAttribute(?string $value): ?string

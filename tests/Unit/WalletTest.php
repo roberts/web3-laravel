@@ -16,4 +16,3 @@ it('encrypts and decrypts private key transparently', function () {
     expect($wallet->maskedKey())->toContain(substr($plain, 0, 6))
         ->and($wallet->maskedKey())->toContain(substr($plain, -4));
 });
-

@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Event;
-use Roberts\Web3Laravel\Database\Factories\ContractFactory;
 use Roberts\Web3Laravel\Models\Contract;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Wallet;

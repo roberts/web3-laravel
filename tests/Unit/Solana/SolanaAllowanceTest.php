@@ -7,7 +7,6 @@ use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Models\Contract;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
-use Roberts\Web3Laravel\Protocols\Solana\SplToken;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
 
 it('reads allowance (delegated amount) from token accounts', function () {
