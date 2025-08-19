@@ -16,8 +16,12 @@ return new class extends Migration
             $table->unsignedTinyInteger('decimals'); // Number of decimal places
             $table->decimal('total_supply', 78, 0)->nullable(); // Total token supply
 
-            // Token metadata for deployed tokens
-            $table->json('metadata')->nullable(); // Icon, description, social links, etc.
+            // Token metadata fields (all optional)
+            $table->string('icon_url')->nullable();
+            $table->text('description')->nullable();
+            $table->string('website_url')->nullable();
+            $table->string('twitter_url')->nullable();
+            $table->string('telegram_url')->nullable();
 
             // Market data (optional)
             $table->decimal('price_usd', 20, 8)->nullable();

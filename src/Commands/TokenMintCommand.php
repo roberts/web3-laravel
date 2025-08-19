@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Roberts\Web3Laravel\Models\Token;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Services\TokenService;
+use Roberts\Web3Laravel\Support\Address;
 
 class TokenMintCommand extends Command
 {
@@ -39,7 +40,7 @@ class TokenMintCommand extends Command
         // Find wallet (minter)
         $wallet = is_numeric($walletInput)
             ? Wallet::find($walletInput)
-            : Wallet::where('address', strtolower($walletInput))->first();
+            : Wallet::where('address', \Roberts\Web3Laravel\Support\Address::normalize($walletInput))->first();
 
         if (! $wallet) {
             $this->error("Wallet not found: {$walletInput}");
@@ -48,7 +49,7 @@ class TokenMintCommand extends Command
         }
 
         // Validate addresses
-        if (! $this->isValidAddress($to)) {
+        if (! Address::isValidEvm($to)) {
             $this->error("Invalid recipient address: {$to}");
 
             return self::FAILURE;
@@ -88,8 +89,5 @@ class TokenMintCommand extends Command
         }
     }
 
-    private function isValidAddress(string $address): bool
-    {
-        return preg_match('/^0x[a-fA-F0-9]{40}$/', $address);
-    }
+    // Validation provided by Support\Address
 }

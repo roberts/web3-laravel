@@ -12,6 +12,7 @@ use Roberts\Web3Laravel\Events\TransactionPrepared;
 use Roberts\Web3Laravel\Events\TransactionPreparing;
 use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Services\TransactionService;
+use Roberts\Web3Laravel\Support\Hex;
 
 class PrepareTransaction implements ShouldQueue
 {
@@ -75,7 +76,7 @@ class PrepareTransaction implements ShouldQueue
                     $tx->fee_max = $tx->fee_max ?: $fees['max'];
                 } catch (\Throwable $e) {
                     // fallback 1 gwei
-                    $tx->priority_max = $tx->priority_max ?: \Web3\Utils::toHex(1_000_000_000, true);
+                    $tx->priority_max = $tx->priority_max ?: Hex::toHex(1_000_000_000, true);
                     $tx->fee_max = $tx->fee_max ?: $tx->priority_max;
                 }
             }
@@ -83,9 +84,9 @@ class PrepareTransaction implements ShouldQueue
             if (empty($tx->gwei)) {
                 try {
                     $gp = $wallet->gasPrice();
-                    $tx->gwei = is_string($gp) ? $gp : \Web3\Utils::toHex($gp, true);
+                    $tx->gwei = is_string($gp) ? $gp : Hex::toHex($gp, true);
                 } catch (\Throwable $e) {
-                    $tx->gwei = \Web3\Utils::toHex(1_000_000_000, true);
+                    $tx->gwei = Hex::toHex(1_000_000_000, true);
                 }
             }
         }
@@ -124,7 +125,7 @@ class PrepareTransaction implements ShouldQueue
     /** Compute required wei as hex string (0x...), or null if inputs insufficient. */
     protected function estimateRequiredWeiHex(Transaction $tx): ?string
     {
-        $valueHex = $tx->value === null ? '0x0' : (is_string($tx->value) ? $tx->value : \Web3\Utils::toHex($tx->value, true));
+        $valueHex = $tx->value === null ? '0x0' : (is_string($tx->value) ? $tx->value : Hex::toHex($tx->value, true));
         $gas = (int) ($tx->gas_limit ?? 0);
         if ($gas <= 0) {
             return $valueHex;

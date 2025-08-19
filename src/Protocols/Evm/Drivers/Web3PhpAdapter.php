@@ -1,0 +1,3 @@
+<?php
+
+// removed legacy adapter

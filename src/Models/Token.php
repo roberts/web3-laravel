@@ -18,7 +18,11 @@ use Roberts\Web3Laravel\Services\TokenService;
  * @property int $decimals
  * @property string $total_supply
  * @property string|null $icon_url
- * @property array|null $metadata
+ * @property string|null $icon_url
+ * @property string|null $description
+ * @property string|null $website_url
+ * @property string|null $twitter_url
+ * @property string|null $telegram_url
  * @property-read Contract $contract
  */
 class Token extends Model
@@ -33,7 +37,7 @@ class Token extends Model
         'contract_id' => 'integer',
         'decimals' => 'integer',
         'total_supply' => 'string',
-        'metadata' => 'array',
+        // explicit nullable metadata fields
         'price_usd' => 'decimal:8',
         'market_cap_usd' => 'decimal:2',
         'volume_24h_usd' => 'decimal:2',
@@ -119,7 +123,7 @@ class Token extends Model
      */
     public function getIconUrl(): ?string
     {
-        return $this->metadata['icon_url'] ?? null;
+        return $this->icon_url;
     }
 
     /**
@@ -127,7 +131,7 @@ class Token extends Model
      */
     public function getCurrentPrice(): ?string
     {
-        return $this->metadata['price'] ?? null;
+        return $this->attributes['current_price'] ?? null; // placeholder if later added
     }
 
     /**

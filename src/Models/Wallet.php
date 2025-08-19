@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Concerns\InteractsWithWeb3;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Enums\WalletType;
+use Roberts\Web3Laravel\Support\Address;
 
 /**
  * @property int $id
@@ -162,12 +163,39 @@ class Wallet extends Model
     // Scopes
     public function scopeByAddress($query, string $address)
     {
-        return $query->where('address', strtolower($address));
+        return $query->where('address', Address::normalize($address));
     }
 
     public function scopeForUser($query, Model $user)
     {
         return $query->where('owner_id', $user->getKey());
+    }
+
+    // Store normalized lowercase; present checksum outward
+    public function setAddressAttribute(?string $value): void
+    {
+        if (! $value) {
+            $this->attributes['address'] = null;
+
+            return;
+        }
+        // If EVM-like hex, normalize; otherwise store as-is (e.g., Solana base58)
+        $isHex = (bool) preg_match('/^(0x)?[0-9a-fA-F]{40}$/', $value);
+        $this->attributes['address'] = $isHex ? Address::normalize($value) : $value;
+    }
+
+    public function getAddressAttribute(?string $value): ?string
+    {
+        if (! $value) {
+            return null;
+        }
+        // Only checksum EVM addresses; return raw for others (e.g., Solana base58)
+        try {
+            return $this->protocol->isEvm() ? Address::toChecksum($value) : $value;
+        } catch (\Throwable $e) {
+            // If protocol not yet set/loaded, default to raw value to avoid corrupting display
+            return $value;
+        }
     }
 
     // Wallet Type Methods

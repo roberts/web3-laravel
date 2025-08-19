@@ -2,56 +2,51 @@
 
 namespace Roberts\Web3Laravel\Services;
 
-use Elliptic\EC;
+use InvalidArgumentException;
 use Roberts\Web3Laravel\Models\Wallet;
+use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Support\Hex;
 use Roberts\Web3Laravel\Support\Rlp;
-use Roberts\Web3Laravel\Web3Laravel;
-use Web3\Utils as Web3Utils;
+use Roberts\Web3Laravel\Support\Signer;
 
 class TransactionService
 {
-    public function __construct(
-        protected Web3Laravel $web3
-    ) {}
+    public function __construct() {}
 
     /** Estimate gas for a transaction using the wallet's network. */
     public function estimateGas(Wallet $from, array $tx, string $blockTag = 'latest'): string
     {
-        $client = $from->web3();
-        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
-        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
-        $eth = $manager->ethFrom($client);
-        $payload = array_merge(['from' => strtolower($from->address)], $tx);
+        if ($from->protocol->isEvm()) {
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            $payload = array_merge(['from' => strtolower($from->address)], $tx);
 
-        return (string) $this->ethCall($eth, 'estimateGas', [$payload, $blockTag]);
+            return $evm->estimateGas($payload, $blockTag);
+        }
+
+        throw new InvalidArgumentException('estimateGas not supported for non-EVM protocols.');
     }
 
     /** Suggest EIP-1559 fee parameters (maxPriorityFeePerGas, maxFeePerGas) as hex strings. */
     public function suggestFees(Wallet $from): array
     {
-        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
-        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
-        $eth = $manager->ethFrom($from->web3());
-        // priority fee
-        try {
-            $priority = $this->ethCall($eth, 'maxPriorityFeePerGas');
-        } catch (\Throwable) {
-            $priority = Web3Utils::toHex(1_000_000_000, true); // 1 gwei fallback
-        }
-        if (! is_string($priority)) {
-            $priority = Web3Utils::toHex($priority, true);
-        }
-        // use gasPrice as a simple maxFee fallback
-        try {
-            $gp = $this->ethCall($eth, 'gasPrice');
-        } catch (\Throwable) {
-            $gp = $priority;
-        }
-        if (! is_string($gp)) {
-            $gp = Web3Utils::toHex($gp, true);
-        }
+        if ($from->protocol->isEvm()) {
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            try {
+                $priority = $evm->maxPriorityFeePerGas();
+            } catch (\Throwable) {
+                $priority = Hex::toHex(1_000_000_000, true);
+            }
+            try {
+                $gp = $evm->gasPrice();
+            } catch (\Throwable) {
+                $gp = $priority;
+            }
 
-        return ['priority' => $priority, 'max' => $gp];
+            return ['priority' => is_string($priority) ? $priority : Hex::toHex((int) $priority, true), 'max' => is_string($gp) ? $gp : Hex::toHex((int) $gp, true)];
+        }
+        throw new InvalidArgumentException('suggestFees not supported for protocol');
     }
 
     /**
@@ -65,85 +60,73 @@ class TransactionService
     public function sendRaw(Wallet $from, array $tx): string
     {
         // Resolve chain & client
-        $client = $from->web3();
-        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
-        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
-        $eth = $manager->ethFrom($client);
+        if ($from->protocol->isEvm()) {
+            /** @var EvmClientInterface $evm */
+            $evm = app(EvmClientInterface::class);
+            $nonce = $tx['nonce'] ?? $evm->getTransactionCount($from->address, 'pending');
+            $gasPrice = $tx['gasPrice'] ?? $evm->gasPrice();
+            // If no gas provided, estimate from node using provided fields
+            $gasLimit = $tx['gas'] ?? $tx['gasLimit'] ?? null;
+            $to = $tx['to'] ?? null;
+            $value = $tx['value'] ?? 0;
+            $data = $tx['data'] ?? '0x';
+            $chainId = $tx['chainId'] ?? config('web3-laravel.default_chain_id');
 
-        // Fetch missing fields
-        $nonce = $tx['nonce'] ?? $this->ethCall($eth, 'getTransactionCount', [strtolower($from->address), 'pending']);
-        $gasPrice = $tx['gasPrice'] ?? $this->ethCall($eth, 'gasPrice');
-        // If no gas provided, estimate from node using provided fields
-        $gasLimit = $tx['gas'] ?? $tx['gasLimit'] ?? null;
-        $to = $tx['to'] ?? null;
-        $value = $tx['value'] ?? 0;
-        $data = $tx['data'] ?? '0x';
-        $chainId = $tx['chainId'] ?? config('web3-laravel.default_chain_id');
-
-        if ($gasLimit === null) {
-            $est = $this->ethCall($eth, 'estimateGas', [[
-                'from' => strtolower($from->address),
-                'to' => $to,
-                'value' => $value,
-                'data' => $data,
-            ], 'latest']);
-            // Add a small safety margin (12%) to reduce underestimation failures
-            // Convert possible hex result to int if needed
-            if (is_string($est) && str_starts_with($est, '0x')) {
-                $gasInt = hexdec(substr($est, 2));
-            } else {
-                $gasInt = (int) $est;
+            if ($gasLimit === null) {
+                $est = $evm->estimateGas([
+                    'from' => strtolower($from->address),
+                    'to' => $to,
+                    'value' => $value,
+                    'data' => $data,
+                ], 'latest');
+                if (is_string($est) && str_starts_with($est, '0x')) {
+                    $gasInt = hexdec(substr($est, 2));
+                } else {
+                    $gasInt = (int) $est;
+                }
+                $gasLimit = (int) ceil($gasInt * 1.12);
             }
-            $gasLimit = (int) ceil($gasInt * 1.12);
-        }
 
-        // Switch to EIP-1559 if fields present
-        $is1559 = isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) || (($tx['type'] ?? null) === 2);
-        if ($is1559) {
-            return $this->sendEip1559($from, [
-                'nonce' => $nonce,
-                'to' => $to,
-                'value' => $value,
-                'data' => $data,
-                'gas' => $tx['gas'] ?? $tx['gasLimit'] ?? $gasLimit,
+            // EIP-1559 path detection
+            $is1559 = isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) || (($tx['type'] ?? null) === 2);
+            if ($is1559) {
+                return $this->sendEip1559($from, [
+                    'nonce' => $nonce,
+                    'to' => $to,
+                    'value' => $value,
+                    'data' => $data,
+                    'gas' => $tx['gas'] ?? $tx['gasLimit'] ?? $gasLimit,
+                    'chainId' => $chainId,
+                    'maxFeePerGas' => $tx['maxFeePerGas'] ?? null,
+                    'maxPriorityFeePerGas' => $tx['maxPriorityFeePerGas'] ?? null,
+                    'accessList' => $tx['accessList'] ?? [],
+                ]);
+            }
+
+            $toHex = $to ? Hex::toHex($to) : '';
+            $valueHex = is_string($value) ? $value : Hex::toHex($value, true);
+            $dataHex = Hex::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
+
+            $txData = [
+                'nonce' => is_string($nonce) ? $nonce : Hex::toHex($nonce, true),
+                'gasPrice' => is_string($gasPrice) ? $gasPrice : Hex::toHex($gasPrice, true),
+                'gas' => is_string($gasLimit) ? $gasLimit : Hex::toHex($gasLimit, true),
+                'gasLimit' => is_string($gasLimit) ? $gasLimit : Hex::toHex($gasLimit, true),
+                'to' => $toHex ?: '',
+                'value' => $valueHex,
+                'data' => $dataHex,
                 'chainId' => $chainId,
-                'maxFeePerGas' => $tx['maxFeePerGas'] ?? null,
-                'maxPriorityFeePerGas' => $tx['maxPriorityFeePerGas'] ?? null,
-                'accessList' => $tx['accessList'] ?? [],
-            ]);
+            ];
+            $privKeyHex = $from->decryptKey() ?? '';
+            if ($privKeyHex === '') {
+                throw new \RuntimeException('Wallet has no private key available for signing.');
+            }
+            $signed = Signer::signLegacy($txData, $privKeyHex);
+
+            return $evm->sendRawTransaction($signed['raw']);
         }
-
-        // Normalize
-        $toHex = $to ? Web3Utils::toHex($to) : '';
-        $valueHex = is_string($value) ? $value : Web3Utils::toHex($value, true);
-        $dataHex = Web3Utils::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
-
-        if (! class_exists('Web3p\\EthereumTx\\Transaction')) {
-            throw new \RuntimeException('Signing not available. Please require web3p/ethereum-tx.');
-        }
-
-        $txData = [
-            'nonce' => Web3Utils::toHex($nonce, true),
-            'gasPrice' => Web3Utils::toHex($gasPrice, true),
-            'gas' => Web3Utils::toHex($gasLimit, true),
-            'gasLimit' => Web3Utils::toHex($gasLimit, true),
-            'to' => $toHex ?: '',
-            'value' => $valueHex,
-            'data' => $dataHex,
-            'chainId' => $chainId,
-        ];
-
-        $txObj = new \Web3p\EthereumTx\Transaction($txData);
-        $privKeyHex = $from->decryptKey() ?? '';
-        if ($privKeyHex === '') {
-            throw new \RuntimeException('Wallet has no private key available for signing.');
-        }
-        $raw = $txObj->sign($privKeyHex); // hex without 0x
-        $rawHex = '0x'.ltrim($raw, '0x');
-
-        $txHash = $this->ethCall($eth, 'sendRawTransaction', [$rawHex]);
-
-        return (string) $txHash;
+        // Non-EVM protocols are not supported here
+        throw new InvalidArgumentException('sendRaw not supported for non-EVM protocols.');
     }
 
     protected function calculateV(int $recId, int $chainId): int
@@ -155,10 +138,12 @@ class TransactionService
     // EIP-1559 type 0x02 path
     protected function sendEip1559(Wallet $from, array $tx): string
     {
-        $client = $from->web3();
-        /** @var \Roberts\Web3Laravel\Web3Laravel $manager */
-        $manager = app(\Roberts\Web3Laravel\Web3Laravel::class);
-        $eth = $manager->ethFrom($client);
+        if (! $from->protocol->isEvm()) {
+            throw new InvalidArgumentException('sendEip1559 not supported for non-EVM protocols.');
+        }
+
+        /** @var EvmClientInterface $evm */
+        $evm = app(EvmClientInterface::class);
 
         $nonce = $tx['nonce'];
         $to = $tx['to'] ?? null;
@@ -171,91 +156,41 @@ class TransactionService
         $priority = $tx['maxPriorityFeePerGas'] ?? null;
         if ($priority === null) {
             try {
-                $priority = $this->ethCall($eth, 'maxPriorityFeePerGas');
+                $priority = $evm->maxPriorityFeePerGas();
             } catch (\Throwable) {
-                $priority = Web3Utils::toHex(1_000_000_000, true); // 1 gwei
+                $priority = Hex::toHex(1_000_000_000, true); // 1 gwei fallback
             }
         }
+
         $maxFee = $tx['maxFeePerGas'] ?? null;
         if ($maxFee === null) {
             try {
-                $gp = $this->ethCall($eth, 'gasPrice');
-                $maxFee = is_string($gp) ? $gp : Web3Utils::toHex($gp, true);
+                $gp = $evm->gasPrice();
+                $maxFee = $gp ?? $priority;
             } catch (\Throwable) {
                 $maxFee = $priority;
             }
         }
 
-        // Normalize hex
-        $nonceHex = is_string($nonce) ? $nonce : Web3Utils::toHex($nonce, true);
-        $toHex = $to ? Web3Utils::toHex($to) : '';
-        $valueHex = is_string($value) ? $value : Web3Utils::toHex($value, true);
-        $dataHex = Web3Utils::isZeroPrefixed($data) ? $data : ('0x'.ltrim($data, 'x'));
-        $priorityHex = is_string($priority) ? $priority : Web3Utils::toHex($priority, true);
-        $maxFeeHex = is_string($maxFee) ? $maxFee : Web3Utils::toHex($maxFee, true);
-        $gasHex = Web3Utils::toHex($gasLimit, true);
+        // Normalize for signing
+        $signed = Signer::signEip1559([
+            'chainId' => $chainId,
+            'nonce' => $nonce,
+            'maxPriorityFeePerGas' => $priority,
+            'maxFeePerGas' => $maxFee,
+            'gas' => $gasLimit,
+            'to' => $to,
+            'value' => $value,
+            'data' => $data,
+            'accessList' => $accessList,
+        ], $from->decryptKey() ?? '');
 
-        // RLP list for signing: [chainId, nonce, maxPriorityFeePerGas, maxFeePerGas, gas, to, value, data, accessList]
-        $signItems = [
-            Rlp::encodeInt($chainId),
-            Rlp::encodeHex(Web3Utils::stripZero($nonceHex)),
-            Rlp::encodeHex(Web3Utils::stripZero($priorityHex)),
-            Rlp::encodeHex(Web3Utils::stripZero($maxFeeHex)),
-            Rlp::encodeHex(Web3Utils::stripZero($gasHex)),
-            $toHex === '' ? Rlp::encodeString('') : Rlp::encodeHex(Web3Utils::stripZero($toHex)),
-            Rlp::encodeHex(Web3Utils::stripZero($valueHex)),
-            Rlp::encodeHex(Web3Utils::stripZero($dataHex)),
-            $this->encodeAccessList($accessList),
-        ];
-
-        $rlpForSign = Rlp::encodeList($signItems);
-        $payload = "\x02".$rlpForSign;
-        $hashHex = Web3Utils::sha3('0x'.bin2hex($payload));
-
-        $ec = new EC('secp256k1');
-        $priv = $from->decryptKey() ?? '';
-        if ($priv === '') {
-            throw new \RuntimeException('Wallet has no private key available for signing.');
-        }
-        $kp = $ec->keyFromPrivate($priv, 'hex');
-        $sig = $kp->sign($hashHex, ['canonical' => true]);
-        $rHex = $sig->r->toString(16);
-        $sHex = $sig->s->toString(16);
-        $yParity = (int) $sig->recoveryParam; // 0 or 1
-
-        $signedItems = array_merge($signItems, [
-            Rlp::encodeInt($yParity),
-            Rlp::encodeHex($rHex),
-            Rlp::encodeHex($sHex),
-        ]);
-        $signedRlp = Rlp::encodeList($signedItems);
-        $rawHex = '0x02'.bin2hex($signedRlp);
-
-        $txHash = $this->ethCall($eth, 'sendRawTransaction', [$rawHex]);
-
-        return (string) $txHash;
+        return $evm->sendRawTransaction($signed['raw']);
     }
 
-    private function ethCall($eth, string $method, array $args = [])
-    {
-        $result = null;
-        $error = null;
-        $cb = function ($err, $res) use (&$error, &$result) {
-            $error = $err;
-            $result = $res;
-        };
-        $args[] = $cb;
-        $eth->{$method}(...$args);
-        if ($error) {
-            if ($error instanceof \Throwable) {
-                throw $error;
-            }
-            throw new \RuntimeException('eth call error for '.$method);
-        }
+    // Removed ethCall/web3.php path
 
-        return $result;
-    }
-
+    /** @phpstan-ignore-next-line method.unused */
     private function encodeAccessList(array $accessList): string
     {
         $entries = [];
@@ -264,10 +199,10 @@ class TransactionService
             $storageKeys = $entry['storageKeys'] ?? ($entry['keys'] ?? ($entry[1] ?? []));
             $encodedKeys = [];
             foreach ((array) $storageKeys as $key) {
-                $encodedKeys[] = Rlp::encodeHex(Web3Utils::stripZero($key));
+                $encodedKeys[] = Rlp::encodeHex(Hex::stripZero($key));
             }
             $entries[] = Rlp::encodeList([
-                $address ? Rlp::encodeHex(Web3Utils::stripZero($address)) : Rlp::encodeString(''),
+                $address ? Rlp::encodeHex(Hex::stripZero($address)) : Rlp::encodeString(''),
                 Rlp::encodeList($encodedKeys),
             ]);
         }

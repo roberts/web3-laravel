@@ -27,7 +27,7 @@ class WalletTypeCommand extends Command
         // Find wallet
         $wallet = is_numeric($walletInput)
             ? Wallet::find($walletInput)
-            : Wallet::where('address', strtolower($walletInput))->first();
+            : Wallet::where('address', \Roberts\Web3Laravel\Support\Address::normalize($walletInput))->first();
 
         if (! $wallet) {
             $this->error("Wallet not found: {$walletInput}");
