@@ -7,9 +7,14 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
+use Elliptic\EC;
 
 class BitcoinProtocolAdapter implements ProtocolAdapter
 {
+    public function __construct(private KeyEngineInterface $keys)
+    {
+    }
     public function protocol(): BlockchainProtocol
     {
         return BlockchainProtocol::BITCOIN;
@@ -17,11 +22,34 @@ class BitcoinProtocolAdapter implements ProtocolAdapter
 
     public function createWallet(array $attributes = [], ?Model $owner = null, ?Blockchain $blockchain = null): Wallet
     {
-        // Phase 1: random secp256k1 keypair; address derivation TBD (P2WPKH/bech32)
-        $priv = '0x'.strtolower(bin2hex(random_bytes(32)));
+        // Phase 2: random secp256k1 keypair and Bech32 P2WPKH address
+        [$priv, $pub] = $this->keys->randomKeypair(BlockchainProtocol::BITCOIN, 'secp256k1');
+        // Derive compressed public key if not provided
+        if ($pub === '') {
+            $ec = new EC('secp256k1');
+            $key = $ec->keyFromPrivate(ltrim($priv, '0x'), 'hex');
+            $pubPoint = $key->getPublic();
+            $xHex = str_pad($pubPoint->getX()->toString(16), 64, '0', STR_PAD_LEFT);
+            $prefix = $pubPoint->getY()->isOdd() ? '03' : '02';
+            $pub = hex2bin($prefix.$xHex);
+        } else {
+            // Ensure compressed form if 65-byte uncompressed
+            if (strlen($pub) === 65 && $pub[0] === "\x04") {
+                $x = substr($pub, 1, 32);
+                $y = substr($pub, 33, 32);
+                $yIsOdd = (ord($y[31]) & 1) === 1;
+                $prefix = $yIsOdd ? '03' : '02';
+                $pub = hex2bin($prefix.bin2hex($x));
+            }
+        }
+        $network = (string) ($attributes['network'] ?? 'mainnet');
+        $address = app(\Roberts\Web3Laravel\Services\Keys\KeyEngineInterface::class)
+            ->publicKeyToAddress(BlockchainProtocol::BITCOIN, $network, 'secp256k1', $pub);
         $data = array_merge([
-            'address' => 'bc1'.substr(bin2hex(random_bytes(20)), 0, 20), // placeholder
+            'address' => $address,
             'key' => $priv,
+            'public_key' => bin2hex($pub),
+            'key_scheme' => 'secp256k1',
             'protocol' => BlockchainProtocol::BITCOIN,
             'is_active' => true,
         ], $attributes);

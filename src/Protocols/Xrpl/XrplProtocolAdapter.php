@@ -7,10 +7,13 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
-use Tuupola\Base58;
+use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
 class XrplProtocolAdapter implements ProtocolAdapter
 {
+    public function __construct(private KeyEngineInterface $keys)
+    {
+    }
     public function protocol(): BlockchainProtocol
     {
         return BlockchainProtocol::XRPL;
@@ -21,14 +24,14 @@ class XrplProtocolAdapter implements ProtocolAdapter
         if (! extension_loaded('sodium')) {
             throw new \RuntimeException('ext-sodium required for XRPL ed25519');
         }
-        $kp = \sodium_crypto_sign_keypair();
-        $sk = \sodium_crypto_sign_secretkey($kp);
-        $pk = \sodium_crypto_sign_publickey($kp);
-        // Placeholder: base58 Bitcoin alphabet; replace with XRPL alphabet + version/checksum
-        $addr = (new Base58(['characters' => Base58::BITCOIN]))->encode($pk);
+        $scheme = data_get($attributes, 'key_scheme', 'ed25519');
+        [$skHex, $pkBytes] = $this->keys->randomKeypair(BlockchainProtocol::XRPL, $scheme);
+        $addr = $this->keys->publicKeyToAddress(BlockchainProtocol::XRPL, data_get($attributes, 'network', 'mainnet'), $scheme, $pkBytes);
         $data = array_merge([
             'address' => $addr,
-            'key' => bin2hex($sk),
+            'key' => $skHex,
+            'public_key' => bin2hex($pkBytes),
+            'key_scheme' => $scheme,
             'protocol' => BlockchainProtocol::XRPL,
             'is_active' => true,
         ], $attributes);

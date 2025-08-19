@@ -108,7 +108,7 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             return new SolanaSigner;
         });
 
-        $this->app->singleton(SolanaProtocolAdapter::class, function ($app) {
+    $this->app->singleton(SolanaProtocolAdapter::class, function ($app) {
             return new SolanaProtocolAdapter(
                 $app->make(SolanaJsonRpcClient::class),
                 $app->make(SolanaSigner::class)
@@ -164,6 +164,10 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
             $router = new ProtocolRouter;
             $router->register($app->make(EvmProtocolAdapter::class));
             $router->register($app->make(SolanaProtocolAdapter::class));
+            // Adapters with KeyEngine dependency
+            $app->singleton(BitcoinProtocolAdapter::class, fn ($app) => new BitcoinProtocolAdapter($app->make(KeyEngineInterface::class)));
+            $app->singleton(SuiProtocolAdapter::class, fn ($app) => new SuiProtocolAdapter($app->make(KeyEngineInterface::class)));
+            $app->singleton(XrplProtocolAdapter::class, fn ($app) => new XrplProtocolAdapter($app->make(KeyEngineInterface::class)));
             $router->register($app->make(BitcoinProtocolAdapter::class));
             $router->register($app->make(SuiProtocolAdapter::class));
             $router->register($app->make(XrplProtocolAdapter::class));

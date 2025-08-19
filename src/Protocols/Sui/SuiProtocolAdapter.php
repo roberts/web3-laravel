@@ -7,11 +7,15 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
 
 // not used but kept for parity
 
 class SuiProtocolAdapter implements ProtocolAdapter
 {
+    public function __construct(private KeyEngineInterface $keys)
+    {
+    }
     public function protocol(): BlockchainProtocol
     {
         return BlockchainProtocol::SUI;
@@ -22,13 +26,13 @@ class SuiProtocolAdapter implements ProtocolAdapter
         if (! extension_loaded('sodium')) {
             throw new \RuntimeException('ext-sodium required for Sui ed25519');
         }
-        $kp = \sodium_crypto_sign_keypair();
-        $sk = \sodium_crypto_sign_secretkey($kp);
-        $pk = \sodium_crypto_sign_publickey($kp);
-        $address = '0x'.bin2hex($pk);
+        [$skHex, $pkBytes] = $this->keys->randomKeypair(BlockchainProtocol::SUI, 'ed25519');
+        $address = $this->keys->publicKeyToAddress(BlockchainProtocol::SUI, data_get($attributes, 'network', 'mainnet'), 'ed25519', $pkBytes);
         $data = array_merge([
             'address' => $address,
-            'key' => bin2hex($sk),
+            'key' => $skHex,
+            'public_key' => bin2hex($pkBytes),
+            'key_scheme' => 'ed25519',
             'protocol' => BlockchainProtocol::SUI,
             'is_active' => true,
         ], $attributes);
