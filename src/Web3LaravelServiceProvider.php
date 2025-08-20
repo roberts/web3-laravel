@@ -9,11 +9,13 @@ use Roberts\Web3Laravel\Core\Rpc\PooledHttpClient;
 use Roberts\Web3Laravel\Protocols\Bitcoin\BitcoinJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Bitcoin\BitcoinProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Cardano\CardanoProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Cardano\CardanoSdkInterface;
 use Roberts\Web3Laravel\Protocols\CostEstimatorRouter;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
 use Roberts\Web3Laravel\Protocols\Evm\EvmJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Evm\EvmProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Hedera\HederaProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Hedera\HederaSdkInterface;
 use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Solana\SolanaProtocolAdapter;
@@ -22,8 +24,6 @@ use Roberts\Web3Laravel\Protocols\Solana\SolanaSigner;
 use Roberts\Web3Laravel\Protocols\Sui\SuiJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Sui\SuiProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Ton\TonProtocolAdapter;
-use Roberts\Web3Laravel\Protocols\Hedera\HederaSdkInterface;
-use Roberts\Web3Laravel\Protocols\Cardano\CardanoSdkInterface;
 use Roberts\Web3Laravel\Protocols\Ton\TonSdkInterface;
 use Roberts\Web3Laravel\Protocols\Xrpl\XrplJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Xrpl\XrplProtocolAdapter;
@@ -275,7 +275,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         // Optional SDK bindings: host apps may bind concrete implementations
         if (! $this->app->bound(HederaSdkInterface::class)) {
             $this->app->bind(HederaSdkInterface::class, function () {
-                return new class implements HederaSdkInterface {
+                return new class implements HederaSdkInterface
+                {
                     public function createFungibleToken(\Roberts\Web3Laravel\Models\Wallet $signer, array $params): array
                     {
                         throw new \RuntimeException('Hedera SDK not bound. Please bind HederaSdkInterface in your app.');
@@ -285,7 +286,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         }
         if (! $this->app->bound(CardanoSdkInterface::class)) {
             $this->app->bind(CardanoSdkInterface::class, function () {
-                return new class implements CardanoSdkInterface {
+                return new class implements CardanoSdkInterface
+                {
                     public function mintNativeAsset(\Roberts\Web3Laravel\Models\Wallet $signer, array $params): array
                     {
                         throw new \RuntimeException('Cardano SDK not bound. Please bind CardanoSdkInterface in your app.');
@@ -295,7 +297,8 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
         }
         if (! $this->app->bound(TonSdkInterface::class)) {
             $this->app->bind(TonSdkInterface::class, function () {
-                return new class implements TonSdkInterface {
+                return new class implements TonSdkInterface
+                {
                     public function deployJetton(\Roberts\Web3Laravel\Models\Wallet $signer, array $params): array
                     {
                         throw new \RuntimeException('TON SDK not bound. Please bind TonSdkInterface in your app.');

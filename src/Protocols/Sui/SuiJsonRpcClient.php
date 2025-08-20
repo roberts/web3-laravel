@@ -120,6 +120,7 @@ class SuiJsonRpcClient
         ];
         $opts = array_merge($default, $options);
         $res = $this->rpc->call('sui_getObject', [$objectId, $opts]);
+
         return is_array($res) ? $res : null;
     }
 }

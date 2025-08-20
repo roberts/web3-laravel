@@ -35,7 +35,8 @@ class DeployToken
         }
 
         // Prefer SDK if bound, then optional HTTP proxy, else stub
-        $sdkAssetId = null; $sdkTxHash = null;
+        $sdkAssetId = null;
+        $sdkTxHash = null;
         try {
             /** @var \Roberts\Web3Laravel\Protocols\Cardano\CardanoSdkInterface $sdk */
             $sdk = app(\Roberts\Web3Laravel\Protocols\Cardano\CardanoSdkInterface::class);
@@ -48,7 +49,8 @@ class DeployToken
             ]);
             $sdkAssetId = (string) data_get($res, 'assetId');
             $sdkTxHash = (string) data_get($res, 'txHash');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // If a submit proxy is configured, call it; otherwise use stub values
         $submitUrl = (string) config('web3-laravel.cardano.submit_url', '');
@@ -73,7 +75,8 @@ class DeployToken
                 $res = \Illuminate\Support\Facades\Http::withHeaders($headers)->post($submitUrl, $payload)->json();
                 $assetId = (string) data_get($res, 'assetId');
                 $hash = (string) data_get($res, 'txHash');
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
         if (! $assetId) {
             // Placeholder policy and asset (hex)

@@ -108,6 +108,7 @@ class XrplProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\Ha
         $standard = (string) ($tx->meta['standard'] ?? '');
         if ($op === 'create_fungible_token' && $standard === 'xrpl') {
             DeployToken::prepare($tx, $wallet, $this->rpc);
+
             return;
         }
 

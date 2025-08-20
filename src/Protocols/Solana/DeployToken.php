@@ -102,10 +102,10 @@ class DeployToken
             }
         }
 
-    $recipientAddr = (string) ($meta['recipient']['address'] ?? '');
-    $createAta = (bool) ($meta['recipient']['create_ata'] ?? false);
-    /** @var string|null $destAta Binary 32-byte associated token account address if resolved upstream */
-    $destAta = $meta['solana']['dest_ata'] ?? null;
+        $recipientAddr = (string) ($meta['recipient']['address'] ?? '');
+        $createAta = (bool) ($meta['recipient']['create_ata'] ?? false);
+        /** @var string|null $destAta Binary 32-byte associated token account address if resolved upstream */
+        $destAta = $meta['solana']['dest_ata'] ?? null;
         if ($recipientAddr !== '') {
             // The adapter will resolve and pass this later if needed
         }

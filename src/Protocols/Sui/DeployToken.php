@@ -2,12 +2,12 @@
 
 namespace Roberts\Web3Laravel\Protocols\Sui;
 
+use Illuminate\Support\Facades\Crypt;
 use Roberts\Web3Laravel\Models\Contract as Web3Contract;
 use Roberts\Web3Laravel\Models\Token as Web3Token;
 use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Services\Keys\KeyEngineInterface;
-use Illuminate\Support\Facades\Crypt;
 
 class DeployToken
 {
@@ -62,7 +62,11 @@ class DeployToken
         // Estimate gas budget
         $gasPrice = (int) ($meta['sui']['referenceGasPrice'] ?? 0);
         if ($gasPrice <= 0) {
-            try { $gasPrice = $rpc->getReferenceGasPrice(); } catch (\Throwable) { $gasPrice = 10; }
+            try {
+                $gasPrice = $rpc->getReferenceGasPrice();
+            } catch (\Throwable) {
+                $gasPrice = 10;
+            }
         }
         $mult = (int) (config('web3-laravel.sui.gas_budget_multiplier', 10));
         $min = (int) (config('web3-laravel.sui.min_gas_budget', 1000));
@@ -78,7 +82,7 @@ class DeployToken
             $module,
             $function,
             [],
-            [ $name, strtoupper($symbol), (int) $decimals ],
+            [$name, strtoupper($symbol), (int) $decimals],
             (int) $gasBudget,
         );
         $txBytes = (string) (data_get($build, 'txBytes') ?? '');
@@ -174,8 +178,8 @@ class DeployToken
                     $pkg,
                     $module,
                     'mint',
-                    [ $coinType ],
-                    [ $treasuryCapId, (int) $initial ],
+                    [$coinType],
+                    [$treasuryCapId, (int) $initial],
                     (int) $gasBudget,
                 );
                 $mintTx = (string) (data_get($mintBuild, 'txBytes') ?? '');
@@ -247,6 +251,7 @@ class DeployToken
             $tx->save();
         } catch (\Throwable) {
         }
+
         return $digest;
     }
 }

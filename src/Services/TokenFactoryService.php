@@ -4,10 +4,10 @@ namespace Roberts\Web3Laravel\Services;
 
 use Illuminate\Database\Eloquent\Model;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
+use Roberts\Web3Laravel\Enums\WalletType;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Transaction;
 use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Enums\WalletType;
 
 class TokenFactoryService
 {
@@ -82,7 +82,7 @@ class TokenFactoryService
             default => 'erc20',
         };
 
-    $createTx = function () use ($signer, $blockchain, $name, $symbol, $decimals, $initial, $recipientAddress, $recipientWalletId, $standard, $options) {
+        $createTx = function () use ($signer, $blockchain, $name, $symbol, $decimals, $initial, $recipientAddress, $recipientWalletId, $standard, $options) {
             return Transaction::create([
                 'wallet_id' => $signer->id,
                 'blockchain_id' => $blockchain?->id,

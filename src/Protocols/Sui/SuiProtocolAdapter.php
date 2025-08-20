@@ -166,6 +166,7 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         $standard = (string) ($tx->meta['standard'] ?? '');
         if ($op === 'create_fungible_token' && $standard === 'sui') {
             DeployToken::prepare($tx, $wallet, $this->rpc);
+
             return;
         }
 

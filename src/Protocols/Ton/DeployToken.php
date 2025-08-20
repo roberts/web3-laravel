@@ -50,7 +50,8 @@ class DeployToken
                 $master = $maybeMaster;
             }
             $hash = (string) data_get($res, 'txHash');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // Attempt real submit if rpc is configured and a signed BOC is available in meta
         $rpcBase = (string) config('web3-laravel.ton.rpc_base', '');
@@ -70,7 +71,8 @@ class DeployToken
                 if ($providedMaster !== '') {
                     $master = $providedMaster;
                 }
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
         try {
             $contract = Web3Contract::query()->firstOrCreate(
@@ -96,14 +98,17 @@ class DeployToken
             if (! $tx->contract_id) {
                 $tx->contract_id = $contract->id;
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
         if (! $hash) {
             $hash = 'stub:'.substr(hash('sha256', $master.':'.microtime(true)), 0, 16);
         }
         try {
             $tx->tx_hash = $hash;
             $tx->save();
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
+
         return $hash;
     }
 }

@@ -15,7 +15,7 @@ class DeployToken
         $meta = (array) ($tx->meta ?? []);
         $meta['xrpl'] = $meta['xrpl'] ?? [];
         $meta['xrpl']['Account'] = $wallet->address;
-    $meta['xrpl']['sign_mode'] = config('web3-laravel.xrpl.sign_mode', 'server');
+        $meta['xrpl']['sign_mode'] = config('web3-laravel.xrpl.sign_mode', 'server');
         // Currency: 3-letter code or 160-bit hex per XRPL rules; we derive from symbol by default
         $token = (array) ($meta['token'] ?? []);
         $symbol = strtoupper((string) ($token['symbol'] ?? ''));
@@ -32,12 +32,14 @@ class DeployToken
             if ($seq > 0) {
                 $meta['xrpl']['Sequence'] = $seq;
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
         try {
             $fee = $rpc->fee();
             $open = (string) (data_get($fee, 'drops.open_ledger_fee') ?? data_get($fee, 'drops.minimum_fee') ?? '12');
             $meta['xrpl']['Fee'] = $open; // in drops
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         $tx->meta = $meta;
     }
@@ -95,7 +97,8 @@ class DeployToken
             if (! $tx->contract_id) {
                 $tx->contract_id = $contract->id;
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // 3) Initial distribution (optional): ensure trustline then send IOU Payment to recipient
         $recipientAddress = (string) (data_get($meta, 'recipient.address') ?? '');
@@ -129,7 +132,8 @@ class DeployToken
                             $rpc->submit($blob);
                         }
                     }
-                } catch (\Throwable) {}
+                } catch (\Throwable) {
+                }
             }
             $amountObj = [
                 'currency' => $currency,
@@ -167,7 +171,8 @@ class DeployToken
             $tx->tx_hash = $hash;
             $tx->meta = array_merge($meta, ['xrpl' => array_merge($xrpl, ['issuer' => $issuer, 'currency' => $currency])]);
             $tx->save();
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         return $hash;
     }

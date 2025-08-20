@@ -105,6 +105,7 @@ class TonProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
         $standard = (string) ($tx->meta['standard'] ?? '');
         if ($op === 'create_fungible_token' && $standard === 'jetton') {
             DeployToken::prepare($tx, $wallet);
+
             return;
         }
         // No-op for other ops for now.

@@ -35,7 +35,8 @@ class DeployToken
         }
 
         // Prefer SDK if bound, then optional HTTP proxy, else stub
-        $sdkTokenId = null; $sdkTxId = null;
+        $sdkTokenId = null;
+        $sdkTxId = null;
         try {
             /** @var \Roberts\Web3Laravel\Protocols\Hedera\HederaSdkInterface $sdk */
             $sdk = app(\Roberts\Web3Laravel\Protocols\Hedera\HederaSdkInterface::class);
@@ -48,7 +49,8 @@ class DeployToken
             ]);
             $sdkTokenId = (string) data_get($res, 'tokenId');
             $sdkTxId = (string) data_get($res, 'txId');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // If a submit proxy is configured, call it; otherwise return stub values
         $submitUrl = (string) config('web3-laravel.hedera.submit_url', '');
@@ -73,7 +75,8 @@ class DeployToken
                 $res = \Illuminate\Support\Facades\Http::withHeaders($headers)->post($submitUrl, $payload)->json();
                 $tokenId = (string) data_get($res, 'tokenId');
                 $txId = (string) data_get($res, 'txId');
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
         if (! $tokenId) {
             // Placeholder token id and synthetic tx id
