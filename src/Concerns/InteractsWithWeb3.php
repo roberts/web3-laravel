@@ -4,22 +4,22 @@ namespace Roberts\Web3Laravel\Concerns;
 
 use InvalidArgumentException;
 use Roberts\Web3Laravel\Enums\BlockchainProtocol;
+use Roberts\Web3Laravel\Models\Transaction;
+use Roberts\Web3Laravel\Protocols\CostEstimatorRouter;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
+use Roberts\Web3Laravel\Services\BalanceService;
 
 trait InteractsWithWeb3
 {
-    // Removed web3.php helpers; native client only.
-
     // Public helpers
     public function getBalance(string $blockTag = 'latest'): string
     {
-        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
-            /** @var EvmClientInterface $evm */
-            $evm = app(EvmClientInterface::class);
+        // Route via BalanceService for all protocols
+        /** @var BalanceService $svc */
+        $svc = app(BalanceService::class);
 
-            return $evm->getBalance($this->address, $blockTag);
-        }
-        throw new InvalidArgumentException('getBalance not supported for protocol');
+        return $svc->native($this);
     }
 
     // Eloquent-style alias
@@ -36,13 +36,23 @@ trait InteractsWithWeb3
 
             return $evm->getTransactionCount($this->address, $blockTag);
         }
-        throw new InvalidArgumentException('getTransactionCount not supported for protocol');
+        throw new InvalidArgumentException('getTransactionCount/nonce not available for this protocol');
     }
 
     // Eloquent-style alias
     public function nonce(string $blockTag = 'latest'): string
     {
+        // Backwards-compat EVM alias; for other protocols prefer sequence()
         return $this->getTransactionCount($blockTag);
+    }
+
+    /** XRPL/Solana-style sequence helper (EVM returns hex nonce). */
+    public function sequence(): int|string|null
+    {
+        /** @var \Roberts\Web3Laravel\Services\SequenceService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\SequenceService::class);
+
+        return $svc->current($this);
     }
 
     public function getGasPrice(): string
@@ -80,12 +90,108 @@ trait InteractsWithWeb3
         throw new InvalidArgumentException('estimateGas not supported for protocol');
     }
 
+    /**
+     * Chain-agnostic cost estimation helper using per-protocol estimators.
+     * Returns an array like ['total_required' => string, 'unit' => string, 'details' => array].
+     */
+    public function estimateCost(array $tx = []): array
+    {
+        /** @var CostEstimatorRouter $router */
+        $router = app(CostEstimatorRouter::class);
+        $estimator = $router->for($this->protocol);
+
+        // Build an in-memory Transaction for estimation
+        $t = new Transaction([
+            'to' => $tx['to'] ?? null,
+            'value' => $tx['value'] ?? null,
+            'data' => $tx['data'] ?? null,
+            'gas_limit' => $tx['gas'] ?? $tx['gasLimit'] ?? null,
+            'gwei' => $tx['gasPrice'] ?? null,
+            'fee_max' => $tx['maxFeePerGas'] ?? null,
+            'priority_max' => $tx['maxPriorityFeePerGas'] ?? null,
+            'is_1559' => (($tx['type'] ?? null) === 2) || isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) ? true : null,
+            'nonce' => $tx['nonce'] ?? null,
+            'chain_id' => $tx['chainId'] ?? null,
+            'meta' => $tx['meta'] ?? [],
+        ]);
+
+        return $estimator->estimateAndPopulate($t, $this);
+    }
+
     // Eloquent-style send using TransactionService
     public function send(array $tx): string
     {
-        /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
-        $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
+        // Prefer protocol adapters for non-EVM; retain direct EVM path via TransactionService
+        if (method_exists($this, 'protocol') && $this->protocol instanceof BlockchainProtocol && $this->protocol->isEvm()) {
+            /** @var \Roberts\Web3Laravel\Services\TransactionService $svc */
+            $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
 
-        return $svc->sendRaw($this, $tx);
+            return $svc->sendRaw($this, $tx);
+        }
+
+        // Build a transient Transaction and submit via adapter
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($this->protocol);
+
+        if (! $adapter instanceof \Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter) {
+            throw new InvalidArgumentException('Sending not supported for protocol');
+        }
+
+        $t = new Transaction([
+            'to' => $tx['to'] ?? null,
+            'value' => $tx['value'] ?? null,
+            'data' => $tx['data'] ?? null,
+            'gas_limit' => $tx['gas'] ?? $tx['gasLimit'] ?? null,
+            'gwei' => $tx['gasPrice'] ?? null,
+            'fee_max' => $tx['maxFeePerGas'] ?? null,
+            'priority_max' => $tx['maxPriorityFeePerGas'] ?? null,
+            'is_1559' => (($tx['type'] ?? null) === 2) || isset($tx['maxFeePerGas']) || isset($tx['maxPriorityFeePerGas']) ? true : null,
+            'nonce' => $tx['nonce'] ?? null,
+            'chain_id' => $tx['chainId'] ?? null,
+            'meta' => $tx['meta'] ?? [],
+        ]);
+
+        // Best-effort preparation and cost estimation
+        try {
+            $adapter->prepareTransaction($t, $this);
+            /** @var CostEstimatorRouter $costRouter */
+            $costRouter = app(CostEstimatorRouter::class);
+            $est = $costRouter->for($this->protocol);
+            $est->estimateAndPopulate($t, $this);
+        } catch (\Throwable) {
+        }
+
+        return $adapter->submitTransaction($t, $this);
+    }
+
+    /**
+     * Chain-agnostic native transfer helper (amount in base units, e.g., wei/lamports).
+     */
+    public function transferNative(string $toAddress, string $amount): string
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($this->protocol);
+
+        return $adapter->transferNative($this, $toAddress, $amount);
+    }
+
+    /** Normalize an address for this wallet's protocol. */
+    public function normalizeAddress(string $address): string
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+
+        return $router->for($this->protocol)->normalizeAddress($address);
+    }
+
+    /** Validate an address for this wallet's protocol. */
+    public function validateAddress(string $address): bool
+    {
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+
+        return $router->for($this->protocol)->validateAddress($address);
     }
 }

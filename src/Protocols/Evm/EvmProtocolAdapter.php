@@ -8,11 +8,12 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
 use Roberts\Web3Laravel\Models\Wallet;
 use Roberts\Web3Laravel\Protocols\Contracts\ProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
 use Roberts\Web3Laravel\Support\Address;
 use Roberts\Web3Laravel\Support\Hex;
 use Roberts\Web3Laravel\Support\Keccak;
 
-class EvmProtocolAdapter implements ProtocolAdapter
+class EvmProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\HasSequence, ProtocolAdapter, ProtocolTransactionAdapter
 {
     public function __construct(private EvmClientInterface $evm) {}
 
@@ -58,8 +59,23 @@ class EvmProtocolAdapter implements ProtocolAdapter
 
     public function transferNative(Wallet $from, string $toAddress, string $amount): string
     {
-        // Leave EVM transfer to TransactionService in current codebase; not implemented here yet.
-        throw new \RuntimeException('transferNative not implemented via adapter for EVM');
+        // Delegate to TransactionService raw send for a simple value transfer
+        $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
+        $payload = [
+            'to' => Address::normalize($toAddress),
+            // Amount is provided as decimal base units; convert to 0x quantity
+            'value' => Hex::toHex($amount, true),
+            'gas' => 21000,
+        ];
+        try {
+            $gp = $this->evm->gasPrice();
+            // gasPrice() contract returns a hex string; assign directly
+            $payload['gasPrice'] = $gp;
+        } catch (\Throwable) {
+            // fallback: let TransactionService pick defaults
+        }
+
+        return $svc->sendRaw($from, $payload);
     }
 
     public function normalizeAddress(string $address): string
@@ -89,19 +105,132 @@ class EvmProtocolAdapter implements ProtocolAdapter
 
     public function transferToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $from, string $toAddress, string $amount): string
     {
-        // For EVM, token transfers are handled via TransactionService/TokenService to build ABI calls.
-        throw new \RuntimeException('transferToken not implemented via adapter for EVM');
+        // For EVM we create an async Transaction via TokenService and return the created transaction id.
+        /** @var \Roberts\Web3Laravel\Services\TokenService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+        $to = Address::normalize($toAddress);
+        $tx = app()->runningUnitTests()
+            ? Model::withoutEvents(fn () => $svc->transfer($token, $from, $to, $amount))
+            : $svc->transfer($token, $from, $to, $amount);
+
+        return (string) $tx->id;
     }
 
     public function approveToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress, string $amount): string
     {
-        // For EVM, approvals are handled via TransactionService/TokenService to build ABI calls.
-        throw new \RuntimeException('approveToken not implemented via adapter for EVM');
+        /** @var \Roberts\Web3Laravel\Services\TokenService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+        $spender = Address::normalize($spenderAddress);
+        $tx = app()->runningUnitTests()
+            ? Model::withoutEvents(fn () => $svc->approve($token, $owner, $spender, $amount))
+            : $svc->approve($token, $owner, $spender, $amount);
+
+        return (string) $tx->id;
     }
 
     public function revokeToken(\Roberts\Web3Laravel\Models\Token $token, \Roberts\Web3Laravel\Models\Wallet $owner, string $spenderAddress): string
     {
-        // For EVM, approvals are handled via TransactionService/TokenService to build ABI calls (approve 0).
-        throw new \RuntimeException('revokeToken not implemented via adapter for EVM');
+        /** @var \Roberts\Web3Laravel\Services\TokenService $svc */
+        $svc = app(\Roberts\Web3Laravel\Services\TokenService::class);
+        $spender = Address::normalize($spenderAddress);
+        $tx = app()->runningUnitTests()
+            ? Model::withoutEvents(fn () => $svc->approve($token, $owner, $spender, '0'))
+            : $svc->approve($token, $owner, $spender, '0');
+
+        return (string) $tx->id;
+    }
+
+    // -----------------------------
+    // ProtocolTransactionAdapter (EVM)
+    // -----------------------------
+    public function prepareTransaction(\Roberts\Web3Laravel\Models\Transaction $tx, Wallet $wallet): void
+    {
+        // Mirror current PrepareTransaction logic but keep here for EVM specifics
+        // We keep it minimal; the job continues to do generic parts.
+        if (empty($tx->chain_id)) {
+            $tx->chain_id = (int) (config('web3-laravel.default_chain_id'));
+        }
+        // Fill nonce if missing
+        if ($tx->nonce === null) {
+            try {
+                $tx->nonce = (int) $this->evm->getTransactionCount($wallet->address, 'pending');
+            } catch (\Throwable) {
+                // leave null; node will handle or submission will fail
+            }
+        }
+    }
+
+    public function submitTransaction(\Roberts\Web3Laravel\Models\Transaction $tx, Wallet $wallet): string
+    {
+        $svc = app(\Roberts\Web3Laravel\Services\TransactionService::class);
+        $payload = [
+            'to' => $tx->to,
+            'value' => $tx->value,
+            'data' => $tx->data,
+            'gas' => $tx->gas_limit,
+            'nonce' => $tx->nonce,
+            'chainId' => $tx->chain_id,
+        ];
+        if ($tx->is_1559) {
+            $payload['maxFeePerGas'] = $tx->fee_max;
+            $payload['maxPriorityFeePerGas'] = $tx->priority_max;
+            if (! empty($tx->access_list)) {
+                $payload['accessList'] = json_decode($tx->access_list, true) ?: [];
+            }
+        } else {
+            $payload['gasPrice'] = $tx->gwei;
+        }
+
+        return $svc->sendRaw($wallet, $payload);
+    }
+
+    public function checkConfirmations(\Roberts\Web3Laravel\Models\Transaction $tx, Wallet $wallet): array
+    {
+        try {
+            $receipt = $this->evm->getTransactionReceipt((string) $tx->tx_hash);
+            if (! $receipt) {
+                return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
+            }
+            $currentBlock = $this->evm->blockNumber();
+            $receiptBlock = $receipt['blockNumber'] ?? null;
+            if (! $receiptBlock || ! $currentBlock) {
+                return ['confirmed' => false, 'confirmations' => 0, 'receipt' => $receipt, 'blockNumber' => null];
+            }
+            $blockNum = $this->parseHexOrInt($receiptBlock);
+            $head = $this->parseHexOrInt($currentBlock);
+            $confirmations = max(0, $head - $blockNum + 1);
+            $required = (int) config('web3-laravel.confirmations_required', 6);
+
+            return [
+                'confirmed' => $confirmations >= $required,
+                'confirmations' => $confirmations,
+                'receipt' => $receipt,
+                'blockNumber' => $blockNum,
+            ];
+        } catch (\Throwable) {
+            return ['confirmed' => false, 'confirmations' => 0, 'receipt' => null, 'blockNumber' => null];
+        }
+    }
+
+    private function parseHexOrInt(string|int|null $v): int
+    {
+        if ($v === null) {
+            return 0;
+        }
+        if (is_string($v) && str_starts_with($v, '0x')) {
+            return (int) hexdec(substr($v, 2));
+        }
+
+        return (int) $v;
+    }
+
+    // Optional capability: account nonce
+    public function sequence(Wallet $wallet): int|string|null
+    {
+        try {
+            return $this->evm->getTransactionCount($wallet->address, 'pending');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

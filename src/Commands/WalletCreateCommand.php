@@ -4,13 +4,12 @@ namespace Roberts\Web3Laravel\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Blockchain;
-use Roberts\Web3Laravel\Services\WalletService;
+use Roberts\Web3Laravel\Models\Wallet;
 
 class WalletCreateCommand extends Command
 {
-    public $signature = 'web3:wallet:create {--ownerType=} {--ownerId=} {--chainId=} {--blockchainId=} {--protocol=}';
+    public $signature = 'web3:wallet:create {--ownerType=} {--ownerId=} {--chainId=} {--blockchainId=} {--protocol=} {--network=}';
 
     public $description = 'Create a new wallet optionally tied to an owner and a specified blockchain (EVM or Solana).';
 
@@ -21,6 +20,7 @@ class WalletCreateCommand extends Command
         $chainId = $this->option('chainId');
         $blockchainId = $this->option('blockchainId');
         $protocol = $this->option('protocol');
+        $network = $this->option('network');
 
         $owner = null;
         if ($ownerType && $ownerId) {
@@ -63,18 +63,25 @@ class WalletCreateCommand extends Command
             }
         }
 
-        $service = app(WalletService::class);
+        // Attributes passed to adapters (e.g., network for Bitcoin tb/bc, etc.)
+        $attributes = [];
+        if (is_string($network) && $network !== '') {
+            $attributes['network'] = $network;
+        }
+
         if ($blockchain) {
-            $wallet = $service->createForBlockchain($blockchain, [], $owner);
+            $wallet = Wallet::createForBlockchain($blockchain, $attributes, $owner);
         } else {
-            // Use protocol if provided, else default to EVM
-            $proto = is_string($protocol) ? strtolower($protocol) : 'evm';
-            $enum = $proto === 'solana' ? BlockchainProtocol::SOLANA : BlockchainProtocol::EVM;
-            $wallet = $service->createForProtocol($enum, [], $owner);
+            // Use protocol if provided; otherwise default to EVM
+            $proto = is_string($protocol) && $protocol !== '' ? $protocol : 'evm';
+            $wallet = Wallet::createForProtocolValue($proto, $attributes, $owner, null);
         }
 
         $this->info('Wallet created: '.$wallet->address);
         $this->line('Protocol: '.$wallet->protocol->value.' | Encrypted key stored.');
+        if (! empty($wallet->public_key)) {
+            $this->line('Public Key: '.$wallet->public_key);
+        }
 
         return self::SUCCESS;
     }

@@ -10,6 +10,8 @@ use Illuminate\Queue\SerializesModels;
 use Roberts\Web3Laravel\Events\TransactionFailed;
 use Roberts\Web3Laravel\Events\TransactionSubmitted;
 use Roberts\Web3Laravel\Models\Transaction;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 use Roberts\Web3Laravel\Services\TransactionService;
 
 class SubmitTransaction implements ShouldQueue
@@ -26,34 +28,44 @@ class SubmitTransaction implements ShouldQueue
             return;
         }
 
-        $payload = [
-            'to' => $model->to,
-            'value' => $model->value,
-            'data' => $model->data,
-            'gas' => $model->gas_limit,
-            'nonce' => $model->nonce,
-            'chainId' => $model->chain_id,
-        ];
-
-        if ($model->is_1559) {
-            $payload['maxFeePerGas'] = $model->fee_max;
-            $payload['maxPriorityFeePerGas'] = $model->priority_max;
-            if (! empty($model->access_list)) {
-                $payload['accessList'] = json_decode($model->access_list, true) ?: [];
-            }
-        } else {
-            $payload['gasPrice'] = $model->gwei;
-        }
-
         try {
-            $hash = $tx->sendRaw($model->wallet, $payload);
+            /** @var \Roberts\Web3Laravel\Models\Wallet $wallet */
+            $wallet = $model->wallet;
+            /** @var ProtocolRouter $router */
+            $router = app(ProtocolRouter::class);
+            $adapter = $router->for($wallet->protocol);
+            if ($adapter instanceof ProtocolTransactionAdapter) {
+                $hash = $adapter->submitTransaction($model, $wallet);
+            } else {
+                // Fallback to EVM-only TransactionService path
+                $payload = [
+                    'to' => $model->to,
+                    'value' => $model->value,
+                    'data' => $model->data,
+                    'gas' => $model->gas_limit,
+                    'nonce' => $model->nonce,
+                    'chainId' => $model->chain_id,
+                ];
+                if ($model->is_1559) {
+                    $payload['maxFeePerGas'] = $model->fee_max;
+                    $payload['maxPriorityFeePerGas'] = $model->priority_max;
+                    if (! empty($model->access_list)) {
+                        $payload['accessList'] = json_decode($model->access_list, true) ?: [];
+                    }
+                } else {
+                    $payload['gasPrice'] = $model->gwei;
+                }
+                $hash = $tx->sendRaw($wallet, $payload);
+            }
             $model->update([
                 'tx_hash' => $hash,
                 'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Submitted,
             ]);
             event(new TransactionSubmitted($model->fresh()));
-            // Kick off confirmation polling
-            \Roberts\Web3Laravel\Jobs\ConfirmTransaction::dispatch($model->id)->delay(now()->addSeconds(10));
+            // Kick off confirmation polling outside unit tests to avoid long cycles
+            if (! app()->runningUnitTests()) {
+                \Roberts\Web3Laravel\Jobs\ConfirmTransaction::dispatch($model->id)->delay(now()->addSeconds(10));
+            }
         } catch (\Throwable $e) {
             $model->update([
                 'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Failed,

@@ -1,6 +1,6 @@
 {
     "name": "roberts/web3-laravel",
-    "description": "Protocol-first Web3 toolkit with native EVM JSON-RPC and signer for Laravel",
+    "description": "Protocol-first, chain-agnostic Web3 toolkit with native EVM JSON-RPC and signer for Laravel",
     "keywords": [
         "Roberts",
         "laravel",

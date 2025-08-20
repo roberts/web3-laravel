@@ -7,17 +7,28 @@ use Roberts\Web3Laravel\Models\Wallet;
 
 class WalletListCommand extends Command
 {
-    public $signature = 'web3:wallet:list {--ownerId=}';
+    public $signature = 'web3:wallet:list {--ownerId=} {--protocol=}';
 
     public $description = 'List wallets with optional owner filter.';
 
     public function handle(): int
     {
         $ownerId = $this->option('ownerId');
+        $protocolOpt = $this->option('protocol');
 
         $query = Wallet::query();
         if ($ownerId) {
             $query->where('owner_id', $ownerId);
+        }
+        if ($protocolOpt) {
+            $values = collect(explode(',', (string) $protocolOpt))
+                ->filter()
+                ->map(fn ($v) => strtolower(trim($v)))
+                ->values()
+                ->all();
+            if (! empty($values)) {
+                $query->whereIn('protocol', $values);
+            }
         }
 
         /** @var \Illuminate\Support\Collection<int,Wallet> $collection */

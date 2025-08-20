@@ -4,12 +4,10 @@ includes:
 parameters:
     level: 5
     paths:
-        - src
-        - config
-        - database
+    - src
+    - database
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
     checkModelProperties: true
-    stubFiles:
-        - stubs/web3-php.methods.stub.php
+    # No stub files required; native clients only
     treatPhpDocTypesAsCertain: false

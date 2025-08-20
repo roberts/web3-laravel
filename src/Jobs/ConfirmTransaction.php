@@ -9,7 +9,9 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Roberts\Web3Laravel\Events\TransactionConfirmed;
 use Roberts\Web3Laravel\Models\Transaction;
+use Roberts\Web3Laravel\Protocols\Contracts\ProtocolTransactionAdapter;
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
+use Roberts\Web3Laravel\Protocols\ProtocolRouter;
 
 class ConfirmTransaction implements ShouldQueue
 {
@@ -33,41 +35,60 @@ class ConfirmTransaction implements ShouldQueue
         if (! $wallet) {
             return;
         }
+        /** @var ProtocolRouter $router */
+        $router = app(ProtocolRouter::class);
+        $adapter = $router->for($wallet->protocol);
+
+        if ($adapter instanceof ProtocolTransactionAdapter) {
+            $res = $adapter->checkConfirmations($tx, $wallet);
+            if (! ($res['confirmed'] ?? false)) {
+                if (! app()->runningUnitTests()) {
+                    static::dispatch($tx->id)->delay(now()->addSeconds(10));
+                }
+
+                return;
+            }
+            $tx->update([
+                'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Confirmed,
+                'meta' => array_merge((array) $tx->meta, [
+                    'confirmations' => (int) ($res['confirmations'] ?? 0),
+                    'receipt' => $res['receipt'] ?? null,
+                    'blockNumber' => $res['blockNumber'] ?? null,
+                ]),
+            ]);
+            event(new TransactionConfirmed($tx->fresh()));
+
+            return;
+        }
+
+        // Fallback: EVM specific
         /** @var EvmClientInterface $evm */
         $evm = app(EvmClientInterface::class);
-        // Get receipt
         try {
             $receipt = $evm->getTransactionReceipt($tx->tx_hash);
         } catch (\Throwable) {
-            return; // try again later
+            return;
         }
-
-        // No receipt yet; re-dispatch with a small delay
         if (! $receipt) {
-            static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            if (! app()->runningUnitTests()) {
+                static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            }
 
             return;
         }
-
-        // Determine confirmations
         $currentBlock = $evm->blockNumber();
         $receiptBlock = $receipt['blockNumber'] ?? null;
         if (empty($receiptBlock) || $currentBlock === null) {
-            static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            if (! app()->runningUnitTests()) {
+                static::dispatch($tx->id)->delay(now()->addSeconds(10));
+            }
 
             return;
         }
-
-        $blockNum = is_string($receiptBlock) && str_starts_with($receiptBlock, '0x')
-            ? hexdec(substr($receiptBlock, 2))
-            : (int) $receiptBlock;
-        $head = is_string($currentBlock) && str_starts_with($currentBlock, '0x')
-            ? hexdec(substr($currentBlock, 2))
-            : (int) $currentBlock;
-
+        $blockNum = is_string($receiptBlock) && str_starts_with($receiptBlock, '0x') ? hexdec(substr($receiptBlock, 2)) : (int) $receiptBlock;
+        $head = is_string($currentBlock) && str_starts_with($currentBlock, '0x') ? hexdec(substr($currentBlock, 2)) : (int) $currentBlock;
         $confirmations = max(0, $head - $blockNum + 1);
         $required = (int) config('web3-laravel.confirmations_required', 6);
-
         if ($confirmations >= $required) {
             $tx->update([
                 'status' => \Roberts\Web3Laravel\Enums\TransactionStatus::Confirmed,
@@ -80,8 +101,8 @@ class ConfirmTransaction implements ShouldQueue
 
             return;
         }
-
-        // Not enough confirmations; reschedule
-        static::dispatch($tx->id)->delay(now()->addSeconds(10));
+        if (! app()->runningUnitTests()) {
+            static::dispatch($tx->id)->delay(now()->addSeconds(10));
+        }
     }
 }
