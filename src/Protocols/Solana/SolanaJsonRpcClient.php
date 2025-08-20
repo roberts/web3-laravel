@@ -46,4 +46,11 @@ class SolanaJsonRpcClient
 
         return $this->rpc->call('getTokenAccountsByOwner', [$owner, $filterOrProgram, $opts]);
     }
+
+    public function getMinimumBalanceForRentExemption(int $dataLength): int
+    {
+        $res = $this->rpc->call('getMinimumBalanceForRentExemption', [$dataLength]);
+
+        return (int) ($res ?? 0);
+    }
 }

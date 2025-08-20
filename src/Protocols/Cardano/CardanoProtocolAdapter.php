@@ -114,11 +114,21 @@ class CardanoProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdap
     // -----------------------------
     public function prepareTransaction(Transaction $tx, Wallet $wallet): void
     {
-        // No-op: UTXO selection to be handled later.
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'cardano') {
+            DeployToken::prepare($tx, $wallet);
+        }
     }
 
     public function submitTransaction(Transaction $tx, Wallet $wallet): string
     {
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'cardano') {
+            return DeployToken::submit($tx, $wallet);
+        }
+
         throw new \RuntimeException('Cardano transaction submission not implemented yet');
     }
 

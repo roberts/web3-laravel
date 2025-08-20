@@ -1,42 +1,38 @@
-# Web3 Laravel — native EVM JSON-RPC + signer for Laravel
+# Web3 Laravel — protocol‑first, multi‑chain adapters with native EVM JSON‑RPC
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/roberts/web3-laravel.svg?style=flat-square)](https://packagist.org/packages/roberts/web3-laravel)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/roberts/web3-laravel/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/roberts/web3-laravel/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/roberts/web3-laravel/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/roberts/web3-laravel/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/roberts/web3-laravel.svg?style=flat-square)](https://packagist.org/packages/roberts/web3-laravel)
 
-This Laravel package provides a protocol-first, chain-agnostic toolkit to create wallets and interact with multiple chains via per-protocol adapters. It includes a native EVM JSON-RPC client and built-in transaction signer (legacy + EIP-1559). No web3.php dependency.
+This Laravel package provides a protocol‑first, chain‑agnostic toolkit to create wallets and interact with multiple chains via per‑protocol adapters. It includes a native EVM JSON‑RPC client and built‑in transaction signer (legacy + EIP‑1559). No web3.php dependency.
 
 ## Supported blockchains
 
-Web3 Laravel is chain-agnostic with per-protocol adapters. You can create wallets for all chains below, and execute native transfers where supported:
+Web3 Laravel is chain‑agnostic with per‑protocol adapters and a router that picks the right one based on the wallet. High‑level support:
 
-- EVM (Ethereum-compatible)
-    - Wallets: yes
-    - Transactions: native and ERC-20 supported (legacy and EIP-1559)
-- Solana
-    - Wallets: yes (ed25519)
-    - Transactions: native SOL transfers and SPL token approve/transfer supported
-- XRPL
-    - Wallets: yes (ed25519 or secp256k1)
-    - Transactions: prepare/confirm implemented; submit via server-side sign helper (client-side signing WIP)
-- Sui
-    - Wallets: yes (ed25519)
-    - Transactions: native SUI transfers via txBytes builder (sign and execute)
-- Bitcoin
-    - Wallets: yes (secp256k1 Bech32 P2WPKH)
-    - Transactions: stubs in place (prepare/confirm placeholders)
-- Cardano
-    - Wallets: yes (placeholder)
-    - Transactions: stubs in place (prepare/confirm placeholders)
-- Hedera
-    - Wallets: yes (ed25519 placeholder account format)
-    - Transactions: stubs in place (prepare/confirm placeholders)
-- Ton
-    - Wallets: yes (ed25519 placeholder)
-    - Transactions: stubs in place (prepare/confirm placeholders)
+- EVM (Ethereum‑compatible): wallets, native transfers, ERC‑20 approve/transfer
+- Solana: wallets, native SOL, SPL approve/transfer, SPL token deploy helper
+- XRPL: wallets, server‑side IOU issuance flow (with optional auto‑trustline)
+- Sui: wallets, native SUI transfers, Coin Factory token creation
+- Bitcoin: wallets, transaction flow stubs
+- Cardano: wallets; SDK‑first token mint flow with proxy/stub fallbacks
+- Hedera: wallets; SDK‑first token create flow with proxy/stub fallbacks
+- TON: wallets; Jetton deploy via SDK or sendBoc, with stub fallback
 
-The protocol router and cost estimator route calls to the correct adapter automatically based on the wallet’s protocol. As implementations mature, you can extend or replace adapters without changing your app code.
+See the docs below for per‑chain details and configuration.
+
+## Token deployment (multi‑chain)
+
+You can launch fungible tokens via a single, chain-agnostic API. See the full guide with per-chain details, configuration, and examples:
+
+- docs/deploytokens.md — Deploying Fungible Tokens (Solana SPL, Sui Coin Factory, Hedera HTS, Cardano Native Assets, XRPL IOU, TON Jetton)
+
+## Docs
+
+- docs/deploytokens.md — Multi‑chain token deployment guide
+- docs/transactions.md — Transaction pipeline: prepare → submit → confirm
+- docs/sdk-integrations.md — SDK‑first integrations for Hedera, Cardano, and TON
 
 ## Installation
 
@@ -88,13 +84,7 @@ return [
 ];
 ```
 
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag="web3-laravel-views"
-```
-
-## Usage
+## Usage (EVM example)
 
 ```php
 use Roberts\Web3Laravel\Protocols\Evm\EvmClientInterface;
@@ -134,6 +124,24 @@ $txHash = $wallet->send([
 // Contract read-only call using stored ABI on the model
 $contract = Contract::first();
 $result = $contract->call('balanceOf', [$wallet->address]);
+
+### Multi‑chain token creation (async)
+
+Create a token via a custodial/shared wallet and let the pipeline handle the rest (see docs for per‑chain options):
+
+```php
+use Roberts\Web3Laravel\Models\Wallet;
+
+$signer = Wallet::find($signerWalletId);
+$tx = $signer->createFungibleToken([
+    'protocol' => 'solana', // or use 'blockchain_id' to target a specific chain
+    'name' => 'Example',
+    'symbol' => 'EXM',
+    'decimals' => 9,
+    'initial_supply' => '1000000000',
+]);
+// Track $tx->status and $tx->tx_hash; see docs/deploytokens.md
+```
 ```
 
 ### Wallet ownership (User model)
@@ -168,452 +176,16 @@ You can also use the built-in ping command to verify connectivity:
 php artisan web3:ping
 ```
 
-## Transactions: Eloquent model & async pipeline
+## Transactions & events
 
-This package provides a `Transaction` Eloquent model and a fully asynchronous submission flow so your app doesn’t block while sending transactions.
+We provide a chain‑agnostic Transaction model with a fully async prepare/submit/confirm pipeline and lifecycle events. See the full guide for details, examples, and per‑protocol behavior:
 
-- Create a transaction record; it auto-estimates gas and suggests EIP-1559 fees if you don’t provide them.
-- On `created`, an event fires and a queued job handles signing and broadcasting.
-- The model is updated with the resulting `tx_hash` and `status`.
+- docs/transactions.md — Transactions: model, async pipeline, events, confirmations
 
-Example: create and queue a transaction
+## Additional docs and examples
 
-```php
-use Roberts\Web3Laravel\Models\Transaction;
-use Roberts\Web3Laravel\Models\Wallet;
-
-$wallet = Wallet::first();
-
-$tx = Transaction::create([
-	'wallet_id' => $wallet->id,
-	'to' => '0x0000000000000000000000000000000000000000',
-	'value' => '0x3e8', // 1000 wei (supports hex or decimal string)
-	// Omit gas_limit/fees to let the package estimate & suggest 1559 fees automatically
-	// 'data' => '0x...', // for contract method calls
-]);
-
-// Shortly after, the queued job will set:
-// $tx->status  => 'submitted' (or 'failed')
-// $tx->tx_hash => '0x...'
-```
-
-What gets filled automatically when omitted:
-
-- gas_limit: estimated via `eth_estimateGas` with a small 12% safety buffer.
-- is_1559: defaults to true.
-- priority_max: suggested from `eth_maxPriorityFeePerGas` (fallback 1 gwei).
-- fee_max: suggested from `eth_gasPrice` when needed.
-
-Immediate send vs tracked send:
-
-- If you want a quick fire-and-forget send, call `$wallet->send([...])` to sign and broadcast immediately (no DB record).
-- If you need tracking, create a `Transaction` model as shown above; the package handles queuing and status updates for you.
-
-Statuses and fields:
-
-- `status`: `pending` on create, `submitted` after broadcast, `confirmed` when enough confirmations are observed, `failed` on error (with `error` message).
-- `tx_hash`: set on success.
-- Other fields include `nonce`, `chain_id`, `data`, `access_list`, and optional contract function metadata if you store it.
-
-Confirmations tracking
-
-- After a transaction is submitted, the package dispatches a confirmation polling job that:
-	- fetches the transaction receipt periodically,
-	- compares the current block to the receipt’s blockNumber,
-	- marks the record `confirmed` once confirmations >= `web3-laravel.confirmations_required` (default 6).
-- You can tune the threshold in `config/web3-laravel.php`:
-
-```php
-// config/web3-laravel.php
-'confirmations_required' => 6,
-'confirmations_poll_interval' => 10,
-```
-
-Confirmations watcher (polling)
-
-- Run the watcher (long-running) to dispatch periodic confirm checks:
-
-```bash
-php artisan web3:watch-confirmations --interval=5
-```
-
-Advanced: manual estimation & fees
-
-```php
-// Service-level helpers are available if you need them
-$svc = app(Roberts\Web3Laravel\Services\TransactionService::class);
-$gasHex = $svc->estimateGas($wallet, ['to' => $to, 'value' => $value, 'data' => $data]);
-$fees = $svc->suggestFees($wallet); // ['priority' => '0x..', 'max' => '0x..']
-```
-
-## Lifecycle events
-
-Hook into transaction progress throughout the pipeline by listening to these events:
-
-- `Roberts\\Web3Laravel\\Events\\TransactionPreparing`
-- `Roberts\\Web3Laravel\\Events\\TransactionPrepared`
-- `Roberts\\Web3Laravel\\Events\\TransactionSubmitted`
-- `Roberts\\Web3Laravel\\Events\\TransactionConfirmed`
-- `Roberts\\Web3Laravel\\Events\\TransactionFailed` (reason available via `$event->reason`)
-
-Example listener registration (EventServiceProvider):
-
-```php
-protected $listen = [
-	Roberts\\Web3Laravel\\Events\\TransactionSubmitted::class => [
-		App\\Listeners\\NotifyOnSubmission::class,
-	],
-	Roberts\\Web3Laravel\\Events\\TransactionFailed::class => [
-		App\\Listeners\\AlertOnFailure::class,
-	],
-];
-```
-
-Example minimal listener:
-
-```php
-namespace App\Listeners;
-
-use Roberts\Web3Laravel\Events\TransactionSubmitted;
-
-class NotifyOnSubmission
-{
-	public function handle(TransactionSubmitted $event): void
-	{
-		logger()->info('TX submitted', [
-			'id' => $event->transaction->id,
-			'hash' => $event->transaction->tx_hash,
-		]);
-	}
-}
-```
-
-## Token & NFT Management: Clean Architecture with Separated Concerns
-
-This package provides a comprehensive token and NFT management system with clean separation between fungible tokens (ERC-20) and non-fungible tokens (ERC-721/ERC-1155). The architecture is designed for scalability, analytics, and deployment platform integration.
-
-### Core Architecture
-
-- **Tokens**: Dedicated to ERC-20 fungible tokens with metadata support for deployed tokens
-- **NFT Collections**: Manages NFT collection metadata and analytics
-- **Wallet NFTs**: Direct ownership tracking with comprehensive metadata and rarity systems
-
-```php
-use Roberts\Web3Laravel\Models\Token;
-use Roberts\Web3Laravel\Models\NftCollection;
-use Roberts\Web3Laravel\Models\WalletNft;
-use Roberts\Web3Laravel\Models\Wallet;
-use Roberts\Web3Laravel\Enums\TokenType;
-```
-
-### Fungible Tokens (ERC-20)
-
-#### Token Creation & Management
-
-```php
-// Create a fungible token
-$token = Token::create([
-    'contract_id' => $contract->id,
-    'symbol' => 'USDC',
-    'name' => 'USD Coin',
-    'decimals' => 6,
-    'total_supply' => '1000000000000', // 1M USDC with 6 decimals
-    'metadata' => [
-        'icon_url' => 'https://example.com/usdc-icon.png',
-        'description' => 'A stablecoin pegged to USD',
-        'website' => 'https://centre.io/usdc',
-        'social' => [
-            'twitter' => '@centre_io',
-            'telegram' => 't.me/centre_io',
-        ],
-        'deployer_metadata' => [
-            'launch_date' => now(),
-            'initial_liquidity' => '50 ETH',
-            'platform' => 'Web3Laravel Deployer',
-        ],
-    ],
-]);
-
-// Token information and helpers
-echo $token->getDisplayName();     // "USD Coin (USDC)"
-echo $token->getFormattedSupply(); // "1,000,000 USDC"
-echo $token->getIconUrl();         // From metadata
-echo $token->getDescription();     // From metadata
-echo $token->getWebsite();         // From metadata
-
-// Check if token was deployed through your platform
-if ($token->isDeployedToken()) {
-    $deployerInfo = $token->getDeployerMetadata();
-    echo $deployerInfo['platform']; // "Web3Laravel Deployer"
-}
-```
-
-#### Token Operations
-
-```php
-// Balance operations with decimal handling
-$balance = $token->getBalance('0x742d35Cc...'); // Raw balance string
-$walletBalance = $token->getWalletBalance($wallet);
-
-// Format amounts with proper decimals
-$rawAmount = '1500000'; // 1.5 USDC with 6 decimals
-$formatted = $token->formatAmount($rawAmount); // "1.5"
-$parsed = $token->parseAmount('1.5'); // "1500000"
-
-// Market data (when available)
-$price = $token->getCurrentPrice();
-$marketCap = $token->getMarketCap();
-
-// Token holders and analytics
-$holders = $token->getHolders();
-$circulatingSupply = $token->getTotalCirculatingSupply();
-```
-
-### NFT Collections (ERC-721 & ERC-1155)
-
-#### Collection Creation & Management
-
-```php
-// Create an NFT collection
-$collection = NftCollection::create([
-    'contract_id' => $contract->id,
-    'name' => 'Bored Ape Yacht Club',
-    'symbol' => 'BAYC',
-    'description' => 'A collection of 10,000 unique Bored Ape NFTs',
-    'image_url' => 'https://example.com/bayc-logo.png',
-    'banner_url' => 'https://example.com/bayc-banner.png',
-    'external_url' => 'https://boredapeyachtclub.com',
-    'standard' => TokenType::ERC721,
-    'total_supply' => '10000',
-    'floor_price' => '50000000000000000000', // 50 ETH in wei
-    'metadata' => [
-        'creator' => 'Yuga Labs',
-        'royalty_fee' => '2.5%',
-        'launch_date' => '2021-04-23',
-    ],
-]);
-
-// Collection analytics and information
-echo $collection->getOwnerCount();           // Number of unique owners
-echo $collection->getUniqueTokenCount();     // Number of minted tokens
-echo $collection->getFloorPriceFormatted(); // "50.0 ETH"
-
-// Check collection capabilities
-if ($collection->supportsSemiFungible()) {
-    // ERC-1155 collection supports quantities
-}
-
-// Get collection statistics
-$stats = $collection->getCollectionStats();
-/*
-[
-    'total_supply' => '10000',
-    'unique_owners' => 5234,
-    'floor_price' => '50000000000000000000',
-    'volume_24h' => '1250000000000000000000',
-    'transfers_24h' => 45
-]
-*/
-```
-
-#### Trait & Rarity Management
-
-```php
-// Analyze trait distribution across collection
-$traitDistribution = $collection->getTraitDistribution();
-/*
-[
-    'Background' => [
-        'Blue' => ['count' => 1250, 'percentage' => 12.5],
-        'Red' => ['count' => 890, 'percentage' => 8.9],
-        // ...
-    ],
-    'Eyes' => [
-        'Laser' => ['count' => 45, 'percentage' => 0.45],
-        // ...
-    ]
-]
-*/
-
-// Get rarity rankings
-$rarityRankings = $collection->getRarityRanking(10); // Top 10 rarest
-```
-
-### NFT Ownership & Wallet Management
-
-#### Direct NFT Ownership
-
-```php
-// Create NFT ownership record
-$walletNft = WalletNft::create([
-    'wallet_id' => $wallet->id,
-    'nft_collection_id' => $collection->id,
-    'token_id' => '1234',
-    'quantity' => '1', // Always 1 for ERC-721, can be >1 for ERC-1155
-    'metadata_uri' => 'ipfs://QmHash/metadata.json',
-    'metadata' => [
-        'name' => 'Bored Ape #1234',
-        'description' => 'A unique Bored Ape with rare traits',
-        'image' => 'ipfs://QmHash/image.png',
-        'attributes' => [
-            ['trait_type' => 'Background', 'value' => 'Blue'],
-            ['trait_type' => 'Eyes', 'value' => 'Laser'],
-            ['trait_type' => 'Mouth', 'value' => 'Bored'],
-        ],
-    ],
-    'traits' => [
-        'Background' => 'Blue',
-        'Eyes' => 'Laser',
-        'Mouth' => 'Bored',
-    ],
-    'rarity_rank' => 45, // Based on trait rarity
-    'acquired_at' => now(),
-]);
-
-// NFT information and display
-echo $walletNft->getDisplayName();    // "Bored Ape #1234"
-echo $walletNft->getName();           // From metadata or auto-generated
-echo $walletNft->getCollectionName(); // "Bored Ape Yacht Club"
-
-// Semi-fungible token support (ERC-1155)
-if ($walletNft->isSemiFungible()) {
-    echo $walletNft->canTransferQuantity('5'); // Check if can transfer 5 units
-}
-
-// Metadata and rarity
-$metadata = $walletNft->getMetadata();
-$traits = $walletNft->getTraits();
-$rarityScore = $walletNft->getRarityScore();
-
-// Check if metadata needs refresh
-if ($walletNft->needsMetadataRefresh()) {
-    $walletNft->refreshMetadata();
-}
-```
-
-#### Wallet NFT Portfolio Management
-
-```php
-// Get wallet's complete NFT portfolio
-$wallet = Wallet::find(1);
-
-// Basic NFT relationships
-$nfts = $wallet->nfts()->get();                    // All owned NFTs
-$collections = $wallet->nftCollections()->get();   // All collections owned
-$recentNfts = $wallet->recentNfts(10)->get();     // Recently acquired
-
-// Portfolio analytics
-echo $wallet->getNftCount();                // Total NFT count
-echo $wallet->getUniqueCollectionCount();   // Number of different collections
-
-// Check specific ownership
-if ($wallet->ownsNft($collection, '1234')) {
-    echo "Wallet owns token #1234 from this collection";
-}
-
-// Get NFT gallery for display
-$gallery = $wallet->getNftGallery();
-/*
-Collection of NFTs with metadata optimized for gallery display:
-[
-    'id' => 1,
-    'collection_name' => 'Bored Ape Yacht Club',
-    'token_id' => '1234',
-    'name' => 'Bored Ape #1234',
-    'image' => 'ipfs://...',
-    'rarity_rank' => 45,
-    // ...
-]
-*/
-
-// Get NFTs by collection
-$baycNfts = $wallet->getNftsByCollection($collection);
-```
-
-### Token Type Enumeration & Standards
-
-```php
-use Roberts\Web3Laravel\Enums\TokenType;
-
-// Unified token type enum for all standards
-$tokenTypes = [
-    TokenType::ERC20,   // Fungible tokens
-    TokenType::ERC721,  // Non-fungible tokens
-    TokenType::ERC1155, // Multi-token (semi-fungible)
-];
-
-// Type checking and capabilities
-echo TokenType::ERC20->getDisplayName();      // "ERC-20 (Fungible Token)"
-echo TokenType::ERC721->isNft();              // true
-echo TokenType::ERC1155->isSemiFungible();    // true
-echo TokenType::ERC1155->supportsQuantity();  // true
-
-// Use in models
-$collection = NftCollection::where('standard', TokenType::ERC721)->first();
-$multiTokens = NftCollection::where('standard', TokenType::ERC1155)->get();
-```
-
-### Service Integration & Blockchain Operations
-
-All token and NFT operations integrate seamlessly with the existing transaction pipeline and services:
-
-```php
-use Roberts\Web3Laravel\Services\TokenService;
-
-$tokenService = app(TokenService::class);
-
-// Token operations (ERC-20 only now)
-$balance = $tokenService->balanceOf($token, $wallet->address);
-$transaction = $tokenService->transfer($token, $fromWallet, $toAddress, $amount);
-$transaction = $tokenService->mint($token, $minterWallet, $toAddress, $amount);
-
-// All operations return Transaction models for async processing
-echo $transaction->status; // 'pending' -> 'submitted' -> 'confirmed'
-```
-
-### Factory Support for Testing
-
-Comprehensive factory support for all models with realistic data generation:
-
-```php
-// Create test tokens with proper metadata
-$token = Token::factory()
-    ->withSymbol('TEST')
-    ->withDeployerMetadata()
-    ->create();
-
-// Create NFT collections with analytics
-$collection = NftCollection::factory()
-    ->erc721()
-    ->withFloorPrice('50000000000000000000') // 50 ETH
-    ->create();
-
-// Create NFT ownership with specific traits
-$walletNft = WalletNft::factory()
-    ->for($wallet)
-    ->for($collection)
-    ->withTokenId('1234')
-    ->rare() // High rarity traits
-    ->create();
-```
-
-### Artisan Commands
-
-Convenient CLI commands for token and NFT operations:
-
-```bash
-# Token operations
-php artisan web3:token:balance 1 0x742d35Cc... --format
-php artisan web3:token:info 1
-php artisan web3:token:transfer 1 wallet_id 0xRecipient... 1000
-
-# NFT operations  
-php artisan web3:nft:info collection_id token_id
-php artisan web3:nft:transfer wallet_id collection_id token_id 0xRecipient...
-php artisan web3:nft:refresh-metadata collection_id token_id
-```
-
-This architecture provides clean separation of concerns, comprehensive analytics capabilities, and seamless integration with deployment platforms while maintaining full compatibility with existing Laravel patterns and the async transaction system.
+- Explore tests/ for end‑to‑end examples (wallets, adapters, transactions, events).
+- See docs/deploytokens.md for token creation across chains and CLI usage.
 
 ## Features - Core Functionality
 

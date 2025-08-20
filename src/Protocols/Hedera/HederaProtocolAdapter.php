@@ -115,11 +115,21 @@ class HederaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapt
     // -----------------------------
     public function prepareTransaction(Transaction $tx, Wallet $wallet): void
     {
-        // No-op for now.
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'hts') {
+            DeployToken::prepare($tx, $wallet);
+        }
     }
 
     public function submitTransaction(Transaction $tx, Wallet $wallet): string
     {
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'hts') {
+            return DeployToken::submit($tx, $wallet);
+        }
+
         throw new \RuntimeException('Hedera transaction submission not implemented yet');
     }
 

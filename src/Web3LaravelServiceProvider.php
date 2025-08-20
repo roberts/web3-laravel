@@ -22,6 +22,9 @@ use Roberts\Web3Laravel\Protocols\Solana\SolanaSigner;
 use Roberts\Web3Laravel\Protocols\Sui\SuiJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Sui\SuiProtocolAdapter;
 use Roberts\Web3Laravel\Protocols\Ton\TonProtocolAdapter;
+use Roberts\Web3Laravel\Protocols\Hedera\HederaSdkInterface;
+use Roberts\Web3Laravel\Protocols\Cardano\CardanoSdkInterface;
+use Roberts\Web3Laravel\Protocols\Ton\TonSdkInterface;
 use Roberts\Web3Laravel\Protocols\Xrpl\XrplJsonRpcClient;
 use Roberts\Web3Laravel\Protocols\Xrpl\XrplProtocolAdapter;
 use Roberts\Web3Laravel\Services\BalanceService;
@@ -268,5 +271,37 @@ class Web3LaravelServiceProvider extends PackageServiceProvider
 
         // Register event service provider for package
         $this->app->register(\Roberts\Web3Laravel\Providers\EventServiceProvider::class);
+
+        // Optional SDK bindings: host apps may bind concrete implementations
+        if (! $this->app->bound(HederaSdkInterface::class)) {
+            $this->app->bind(HederaSdkInterface::class, function () {
+                return new class implements HederaSdkInterface {
+                    public function createFungibleToken(\Roberts\Web3Laravel\Models\Wallet $signer, array $params): array
+                    {
+                        throw new \RuntimeException('Hedera SDK not bound. Please bind HederaSdkInterface in your app.');
+                    }
+                };
+            });
+        }
+        if (! $this->app->bound(CardanoSdkInterface::class)) {
+            $this->app->bind(CardanoSdkInterface::class, function () {
+                return new class implements CardanoSdkInterface {
+                    public function mintNativeAsset(\Roberts\Web3Laravel\Models\Wallet $signer, array $params): array
+                    {
+                        throw new \RuntimeException('Cardano SDK not bound. Please bind CardanoSdkInterface in your app.');
+                    }
+                };
+            });
+        }
+        if (! $this->app->bound(TonSdkInterface::class)) {
+            $this->app->bind(TonSdkInterface::class, function () {
+                return new class implements TonSdkInterface {
+                    public function deployJetton(\Roberts\Web3Laravel\Models\Wallet $signer, array $params): array
+                    {
+                        throw new \RuntimeException('TON SDK not bound. Please bind TonSdkInterface in your app.');
+                    }
+                };
+            });
+        }
     }
 }

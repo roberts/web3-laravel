@@ -161,6 +161,14 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
     // -----------------------------
     public function prepareTransaction(Transaction $tx, Wallet $wallet): void
     {
+        // If this is a token creation request, delegate to helper
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'sui') {
+            DeployToken::prepare($tx, $wallet, $this->rpc);
+            return;
+        }
+
         // Gather coin objects to use as inputs for a SUI coin transfer; cache reference gas price
         $meta = (array) ($tx->meta ?? []);
         $meta['sui'] = $meta['sui'] ?? [];
@@ -182,6 +190,13 @@ class SuiProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
 
     public function submitTransaction(Transaction $tx, Wallet $wallet): string
     {
+        // Handle token creation via helper
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'sui') {
+            return DeployToken::submit($tx, $wallet, $this->rpc, $this->keys);
+        }
+
         $to = (string) $tx->to;
         $amountStr = (string) ($tx->value ?? '');
         if ($to === '' || $amountStr === '') {

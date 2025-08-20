@@ -364,25 +364,43 @@ class SolanaProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapt
     // -----------------------------
     public function prepareTransaction(Transaction $tx, Wallet $wallet): void
     {
+        $meta = (array) ($tx->meta ?? []);
+
+        // If this is a SPL token creation, precompute mint seed and derived address and record basics.
+        $operation = (string) ($tx->function_params['operation'] ?? ($meta['operation'] ?? ''));
+        $standard = (string) ($meta['standard'] ?? '');
+        if ($operation === 'create_fungible_token' && $standard === 'spl') {
+            // Delegate meta preparation to DeployToken helper
+            DeployToken::prepare($tx, $wallet, $this->rpc);
+            $meta = (array) ($tx->meta ?? []);
+        }
+
         // Fetch latest blockhash and store in meta for use during submit.
         try {
             $latest = $this->rpc->getLatestBlockhash();
             $value = $latest['value'] ?? [];
-            $meta = (array) ($tx->meta ?? []);
             if (isset($value['blockhash'])) {
                 $meta['solana']['recentBlockhash'] = (string) $value['blockhash'];
             }
             if (isset($value['lastValidBlockHeight'])) {
                 $meta['solana']['lastValidBlockHeight'] = (int) $value['lastValidBlockHeight'];
             }
-            $tx->meta = $meta;
         } catch (\Throwable) {
             // Best effort; will refetch during submission.
         }
+
+        $tx->meta = $meta;
     }
 
     public function submitTransaction(Transaction $tx, Wallet $wallet): string
     {
+        // Handle SPL token creation via async pipeline
+        $operation = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($operation === 'create_fungible_token' && $standard === 'spl') {
+            return DeployToken::submit($tx, $wallet, $this->rpc, $this->signer);
+        }
+
         // Only native SOL transfers supported here via pipeline.
         $to = (string) $tx->to;
         if ($to === '') {

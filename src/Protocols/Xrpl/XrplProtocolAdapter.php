@@ -103,6 +103,14 @@ class XrplProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\Ha
     // -----------------------------
     public function prepareTransaction(Transaction $tx, Wallet $wallet): void
     {
+        // If this is a token creation request, delegate to helper
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'xrpl') {
+            DeployToken::prepare($tx, $wallet, $this->rpc);
+            return;
+        }
+
         // Best-effort: fetch account sequence and current open ledger fee
         $meta = (array) ($tx->meta ?? []);
         $meta['xrpl'] = $meta['xrpl'] ?? [];
@@ -126,6 +134,13 @@ class XrplProtocolAdapter implements \Roberts\Web3Laravel\Protocols\Contracts\Ha
 
     public function submitTransaction(Transaction $tx, Wallet $wallet): string
     {
+        // Handle token creation via helper
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'xrpl') {
+            return DeployToken::submit($tx, $wallet, $this->rpc);
+        }
+
         // Minimal path using XRPL server-side sign (only when configured). Safer client-side signing to be implemented later.
         $to = (string) $tx->to;
         $amount = (string) ($tx->value ?? ''); // drops

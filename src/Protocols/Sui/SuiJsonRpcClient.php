@@ -81,4 +81,45 @@ class SuiJsonRpcClient
             (int) $amount,
         ]);
     }
+
+    /** Generic moveCall builder returning txBytes container. */
+    public function moveCall(string $signer, string $packageObjectId, string $module, string $function, array $typeArguments, array $arguments, int $gasBudget): array
+    {
+        return $this->rpc->call('sui_moveCall', [[
+            'packageObjectId' => $packageObjectId,
+            'module' => $module,
+            'function' => $function,
+            'typeArguments' => $typeArguments,
+            'arguments' => $arguments,
+            'gasBudget' => (int) $gasBudget,
+            'signer' => $signer,
+        ]]);
+    }
+
+    /** Transfer a generic object (e.g. TreasuryCap) to a recipient; returns txBytes container. */
+    public function transferObject(string $signer, string $objectId, string $recipient, int $gasBudget): array
+    {
+        return $this->rpc->call('sui_transferObject', [
+            $signer,
+            $objectId,
+            (int) $gasBudget,
+            $recipient,
+        ]);
+    }
+
+    /** Fetch an object by ID with optional options. */
+    public function getObject(string $objectId, array $options = []): ?array
+    {
+        $default = [
+            'showType' => true,
+            'showOwner' => true,
+            'showPreviousTransaction' => false,
+            'showContent' => true,
+            'showBcs' => false,
+            'showStorageRebate' => false,
+        ];
+        $opts = array_merge($default, $options);
+        $res = $this->rpc->call('sui_getObject', [$objectId, $opts]);
+        return is_array($res) ? $res : null;
+    }
 }

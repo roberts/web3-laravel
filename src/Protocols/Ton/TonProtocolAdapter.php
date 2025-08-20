@@ -101,11 +101,22 @@ class TonProtocolAdapter implements ProtocolAdapter, ProtocolTransactionAdapter
     // -----------------------------
     public function prepareTransaction(Transaction $tx, Wallet $wallet): void
     {
-        // No-op for now.
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'jetton') {
+            DeployToken::prepare($tx, $wallet);
+            return;
+        }
+        // No-op for other ops for now.
     }
 
     public function submitTransaction(Transaction $tx, Wallet $wallet): string
     {
+        $op = (string) ($tx->function_params['operation'] ?? ($tx->meta['operation'] ?? ''));
+        $standard = (string) ($tx->meta['standard'] ?? '');
+        if ($op === 'create_fungible_token' && $standard === 'jetton') {
+            return DeployToken::submit($tx, $wallet);
+        }
         throw new \RuntimeException('TON transaction submission not implemented yet');
     }
 

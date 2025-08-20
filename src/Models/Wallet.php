@@ -523,4 +523,21 @@ class Wallet extends Model
             ->limit($limit)
             ->get();
     }
+
+    /**
+     * Enqueue creation of a fungible token signed by this wallet via the async transaction flow.
+     * Required options: name (string), symbol (string), decimals (int), initial_supply (string).
+     * Optional: recipient_address, recipient_wallet_id, create_recipient_ata (bool, Solana),
+     *           mint_authority_wallet_id, freeze_authority_wallet_id, blockchain_id, protocol.
+     */
+    public function createFungibleToken(array $options): \Roberts\Web3Laravel\Models\Transaction
+    {
+        /** @var \Roberts\Web3Laravel\Services\TokenFactoryService $factory */
+        $factory = app(\Roberts\Web3Laravel\Services\TokenFactoryService::class);
+        $options['signer_wallet_id'] = $this->id;
+        // Default protocol to this wallet's protocol if not provided
+        $options['protocol'] = $options['protocol'] ?? $this->protocol;
+
+        return $factory->createFungibleToken($options);
+    }
 }

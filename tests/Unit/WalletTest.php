@@ -4,14 +4,14 @@ use Roberts\Web3Laravel\Enums\BlockchainProtocol;
 use Roberts\Web3Laravel\Models\Wallet;
 
 dataset('protocols', [
-    BlockchainProtocol::EVM,
-    BlockchainProtocol::SOLANA,
-    BlockchainProtocol::BITCOIN,
-    BlockchainProtocol::SUI,
-    BlockchainProtocol::XRPL,
-    BlockchainProtocol::CARDANO,
-    BlockchainProtocol::HEDERA,
-    BlockchainProtocol::TON,
+    'evm' => [BlockchainProtocol::EVM],
+    'solana' => [BlockchainProtocol::SOLANA],
+    'bitcoin' => [BlockchainProtocol::BITCOIN],
+    'sui' => [BlockchainProtocol::SUI],
+    'xrpl' => [BlockchainProtocol::XRPL],
+    'cardano' => [BlockchainProtocol::CARDANO],
+    'hedera' => [BlockchainProtocol::HEDERA],
+    'ton' => [BlockchainProtocol::TON],
 ]);
 
 it('encrypts and decrypts private key transparently across protocols', function (BlockchainProtocol $protocol) {
